@@ -7,9 +7,10 @@ import json
 from prompts import field_prompt, summary_prompt
 from dotenv import load_dotenv
 
+load_dotenv()
+
 # --- Setup Gemini ---
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_API_KEY = "AIzaSyAHK_B3M7P-lfPx_z2sF0AtiPUQLkTQP-o"
 llm = genai.Client(api_key=GEMINI_API_KEY)
 
 REQUIRED_FIELDS = [

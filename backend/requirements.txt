@@ -1,11 +1,9 @@
 fastapi
-uvicorn[standard]
-pydantic
+uvicorn
+google-genai
+elevenlabs
+requests
 python-multipart
+pydantic
 python-dotenv
-google-generativeai
 langgraph
-langchain-google-genai
-httpx
-pytest
-pytest-asyncio

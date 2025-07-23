@@ -67,11 +67,23 @@ export function EmrPreview({ data }: EmrPreviewProps) {
           <div>
             <h3 className="font-semibold mb-2">Symptoms</h3>
             <div className="flex flex-wrap gap-1">
-              {data.symptoms.map((symptom, index) => (
-                <Badge key={index} variant="secondary" className="text-xs">
-                  {symptom}
-                </Badge>
-              ))}
+              {Array.isArray(data.symptoms)
+                ? data.symptoms.flatMap((symptom, index) =>
+                    typeof symptom === "string"
+                      ? symptom.split(",").map((s, i) => (
+                          <Badge key={index + '-' + i} variant="secondary" className="text-xs">
+                            {s.trim()}
+                          </Badge>
+                        ))
+                      : null
+                  )
+                : typeof data.symptoms === "string"
+                ? data.symptoms.split(",").map((s, i) => (
+                    <Badge key={i} variant="secondary" className="text-xs">
+                      {s.trim()}
+                    </Badge>
+                  ))
+                : null}
             </div>
           </div>
         )}

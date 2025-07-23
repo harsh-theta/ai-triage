@@ -15,17 +15,35 @@ interface ChatInterfaceProps {
   onSendMessage: (message: string) => void
   disabled?: boolean
   isLoading?: boolean
+  voiceMode?: boolean
 }
 
-export function ChatInterface({ messages, onSendMessage, disabled = false, isLoading = false }: ChatInterfaceProps) {
+export function ChatInterface({ messages, onSendMessage, disabled = false, isLoading = false, voiceMode = false }: ChatInterfaceProps) {
   const [input, setInput] = useState("")
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [isListening, setIsListening] = useState(false)
+  const recognitionRef = useRef<any>(null)
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
+
+  // TTS: Speak assistant messages when they arrive and voiceMode is on
+  useEffect(() => {
+    if (!voiceMode) return
+    if (messages.length === 0) return
+    const lastMsg = messages[messages.length - 1]
+    if (lastMsg.role === "assistant" && lastMsg.content) {
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel()
+      const utter = new window.SpeechSynthesisUtterance(lastMsg.content)
+      utter.rate = 1
+      utter.pitch = 1
+      window.speechSynthesis.speak(utter)
+    }
+  }, [messages, voiceMode])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -39,6 +57,39 @@ export function ChatInterface({ messages, onSendMessage, disabled = false, isLoa
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
       handleSubmit(e)
+    }
+  }
+
+  // STT: Start/stop speech recognition
+  const handleMicClick = () => {
+    if (!isListening) {
+      // @ts-ignore
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+      if (!SpeechRecognition) {
+        alert("Speech recognition is not supported in this browser.")
+        return
+      }
+      const recognition = new SpeechRecognition()
+      recognition.lang = "en-US"
+      recognition.interimResults = false
+      recognition.maxAlternatives = 1
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript
+        setInput(transcript)
+        setIsListening(false)
+      }
+      recognition.onerror = () => {
+        setIsListening(false)
+      }
+      recognition.onend = () => {
+        setIsListening(false)
+      }
+      recognitionRef.current = recognition
+      setIsListening(true)
+      recognition.start()
+    } else {
+      recognitionRef.current?.stop()
+      setIsListening(false)
     }
   }
 
@@ -80,6 +131,31 @@ export function ChatInterface({ messages, onSendMessage, disabled = false, isLoa
             disabled={disabled || isLoading}
             className="flex-1"
           />
+         {voiceMode && (
+           <Button
+             type="button"
+             onClick={handleMicClick}
+             disabled={disabled || isLoading}
+             variant={isListening ? "secondary" : "outline"}
+             size="icon"
+             aria-label={isListening ? "Stop listening" : "Start listening"}
+           >
+             <svg
+               xmlns="http://www.w3.org/2000/svg"
+               fill={isListening ? "#2563eb" : "none"}
+               viewBox="0 0 24 24"
+               strokeWidth={1.5}
+               stroke="currentColor"
+               className="h-5 w-5"
+             >
+               <path
+                 strokeLinecap="round"
+                 strokeLinejoin="round"
+                 d="M12 18.75v1.5m0 0h3.75m-3.75 0H8.25m7.5-7.5a3.75 3.75 0 10-7.5 0v2.25a3.75 3.75 0 007.5 0V12z"
+               />
+             </svg>
+           </Button>
+         )}
           <Button type="submit" disabled={!input.trim() || disabled || isLoading} size="icon">
             <Send className="h-4 w-4" />
           </Button>

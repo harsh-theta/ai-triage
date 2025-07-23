@@ -1,284 +1,234 @@
-import os
-import json
-import logging
-from typing import Any, Dict, List, Optional, TypedDict
-from fastapi import FastAPI, Request, HTTPException
+# main.py
+
+from fastapi import FastAPI, File, UploadFile, Form, Request
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from agent_graph import build_triad_agent
+# from voice_utils import transcribe_audio, synthesize_speech
+import uuid
+import os
+from fastapi import Query
+from prompts import summary_prompt
+from google import genai
 from pydantic import BaseModel
 from dotenv import load_dotenv
-import google.generativeai as genai
-from langgraph.graph import StateGraph
 
-# =========================
-# Config & Environment
-# =========================
-
+# Load environment variables
 load_dotenv()
-logging.basicConfig(level=logging.INFO)
 
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_API_KEY = "AIzaSyAHK_B3M7P-lfPx_z2sF0AtiPUQLkTQP-o"
 
-if not GOOGLE_API_KEY:
-    logging.error("GOOGLE_API_KEY is not set in the environment.")
-    raise RuntimeError("GOOGLE_API_KEY is required for Gemini API access.")
+# --- Setup Gemini ---
+llm = genai.Client(api_key=GEMINI_API_KEY)
 
-genai.configure(api_key=GOOGLE_API_KEY)
+# Request models
+class TextTriageRequest(BaseModel):
+    user_input: str
 
-# =========================
-# Models
-# =========================
-
-class UserInput(BaseModel):
+class ChatRequest(BaseModel):
     message: str
-    session_id: Optional[str] = None
+    session_id: str = None
 
-class AIResponse(BaseModel):
-    ai_message: str
-    emr_data: Dict[str, Any]
-    status: str
-    protocol: Optional[str] = None
-    messages: Optional[List[Dict[str, Any]]] = None
+app = FastAPI()
 
-class TriageState(TypedDict):
-    messages: list
-    patient_data: dict
-    status: str
-    conversation_summary: str
-
-# =========================
-# Session Management
-# =========================
-
-session_states: Dict[str, TriageState] = {}
-
-def get_or_create_session(session_id: str) -> TriageState:
-    """Initialize or retrieve a session state."""
-    if session_id not in session_states:
-        # Add initial greeting message
-        initial_message = {
-            "role": "assistant",
-            "content": "Hello! I'm your AI triage assistant. I'm here to help gather information about your medical concerns for healthcare professionals. Please describe what's bothering you today or what symptoms you're experiencing."
-        }
-        session_states[session_id] = TriageState(
-            messages=[initial_message],
-            patient_data={},
-            status="active",
-            conversation_summary=""
-        )
-    return session_states[session_id]
-
-# =========================
-# LLM Helper Functions
-# =========================
-
-def get_triage_system_prompt() -> str:
-    """System prompt for the triage assistant."""
-    return """You are a professional medical triage assistant. Your role is to:
-
-1. Gather information about the patient's symptoms and medical concerns through natural conversation
-2. Ask relevant follow-up questions to understand the severity and nature of their condition
-3. Collect important medical information (symptoms, duration, severity, medical history, etc.)
-4. NEVER diagnose conditions or recommend specific treatments/medications
-5. NEVER provide medical advice - only gather information for healthcare professionals
-
-EMERGENCY DETECTION:
-If you detect any of these emergency symptoms, immediately respond with "EMERGENCY_DETECTED" at the start of your message:
-- Chest pain with difficulty breathing
-- Severe difficulty breathing or shortness of breath
-- Signs of stroke (sudden weakness, speech problems, facial drooping)
-- Severe allergic reactions
-- Unconsciousness or altered mental state
-- Severe bleeding or trauma
-- Severe abdominal pain
-- Signs of heart attack
-- Poisoning or overdose
-- Severe burns
-
-CONVERSATION STYLE:
-- Be empathetic and professional
-- Ask one or two questions at a time
-- Use simple, clear language
-- Show concern for their wellbeing
-- Gather comprehensive information systematically
-
-Remember: You are gathering information for healthcare professionals, not providing medical advice."""
-
-def call_gemini_for_triage(conversation_history: List[Dict], user_message: str) -> Dict[str, Any]:
-    """Call Gemini API for triage conversation."""
-    try:
-        # Build conversation context
-        context = ""
-        for msg in conversation_history[-6:]:  # Last 6 messages for context
-            role = "Patient" if msg["role"] == "user" else "Triage Assistant"
-            context += f"{role}: {msg['content']}\n"
-        
-        prompt = f"""{get_triage_system_prompt()}
-
-CONVERSATION HISTORY:
-{context}
-
-CURRENT PATIENT MESSAGE: {user_message}
-
-Please respond as the triage assistant. If this is an emergency, start your response with "EMERGENCY_DETECTED".
-
-Also provide a JSON summary of information gathered so far with these fields:
-- chief_complaint: Main concern in a few words
-- symptoms: List of symptoms mentioned
-- duration: How long symptoms have been present
-- severity: Patient's description of severity (mild/moderate/severe)
-- additional_info: Any other relevant medical information
-- questions_asked: Number of questions you've asked so far
-
-Format your response as:
-RESPONSE: [Your conversational response here]
-JSON_DATA: [JSON object with the summary]"""
-
-        model = genai.GenerativeModel("gemini-1.5-flash-latest")
-        response = model.generate_content(prompt)
-        
-        # Parse the response
-        response_text = response.text
-        
-        # Check for emergency
-        is_emergency = response_text.startswith("EMERGENCY_DETECTED")
-        if is_emergency:
-            response_text = response_text.replace("EMERGENCY_DETECTED", "").strip()
-        
-        # Extract response and JSON data
-        parts = response_text.split("JSON_DATA:")
-        ai_response = parts[0].replace("RESPONSE:", "").strip()
-        
-        # Extract JSON data if present
-        emr_data = {}
-        if len(parts) > 1:
-            try:
-                json_part = parts[1].strip()
-                # Clean up the JSON part
-                if json_part.startswith("```json"):
-                    json_part = json_part.replace("```json", "").replace("```", "").strip()
-                emr_data = json.loads(json_part)
-            except:
-                logging.warning("Could not parse JSON data from response")
-        
-        return {
-            "ai_message": ai_response,
-            "is_emergency": is_emergency,
-            "emr_data": emr_data
-        }
-        
-    except Exception as e:
-        logging.error(f"Gemini API error: {e}")
-        return {
-            "ai_message": "I apologize, but I'm having technical difficulties. Please describe your symptoms again, and if this is an emergency, please call 911 immediately.",
-            "is_emergency": False,
-            "emr_data": {}
-        }
-
-# =========================
-# Triage Logic
-# =========================
-
-def process_triage_message(state: TriageState, user_message: str) -> TriageState:
-    """Process a user message through the LLM-driven triage system."""
-    try:
-        # Call Gemini for triage conversation
-        result = call_gemini_for_triage(state["messages"], user_message)
-        
-        # Add AI response to messages
-        ai_message = {
-            "role": "assistant",
-            "content": result["ai_message"]
-        }
-        state["messages"].append(ai_message)
-        
-        # Update patient data with new information
-        if result["emr_data"]:
-            state["patient_data"].update(result["emr_data"])
-        
-        # Update status based on emergency detection
-        if result["is_emergency"]:
-            state["status"] = "emergency_detected"
-        else:
-            state["status"] = "active"
-            
-        return state
-        
-    except Exception as e:
-        logging.error(f"Triage processing error: {e}")
-        # Add error message
-        error_message = {
-            "role": "assistant", 
-            "content": "I apologize, but I'm experiencing technical difficulties. Please describe your symptoms again, and if this is an emergency, please call 911 immediately."
-        }
-        state["messages"].append(error_message)
-        state["status"] = "error"
-        return state
-
-# =========================
-# FastAPI App & Endpoints
-# =========================
-
-app = FastAPI(title="AI Triage System", version="1.0.0")
-
+# Enable CORS if needed
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_URL],
+    allow_origins=["*"],  # Adjust for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-@app.get("/")
-async def root():
-    """Root endpoint for service info."""
-    return {"message": "AI Triage System API is running"}
+# Directory to store audio responses
+os.makedirs("responses", exist_ok=True)
 
-@app.get("/health")
-async def health_check():
-    """Health check endpoint."""
-    return {"status": "healthy", "service": "ai-triage-system"}
+# Build the agent once
+triage_graph = build_triad_agent()
 
-@app.post("/chat", response_model=AIResponse)
-async def chat_endpoint(user_input: UserInput, request: Request):
-    """Main chat endpoint for triage conversation."""
-    session_id = user_input.session_id or str(request.client.host)
-    try:
-        # Get or create session state
-        state = get_or_create_session(session_id)
+# In-memory session storage
+sessions = {}
 
-        # Add the user message to conversation history
-        user_message = {"role": "user", "content": user_input.message}
-        state["messages"].append(user_message)
 
-        # Process the message through LLM-driven triage
-        final_state = process_triage_message(state, user_input.message)
-        
-        # Update session state
-        session_states[session_id] = final_state
-        
-        # Get the latest AI message
-        ai_message = final_state["messages"][-1]["content"] if final_state["messages"] else "Hello! I'm here to help assess your medical concerns. Please describe what's bothering you today."
-        
-        return AIResponse(
-            ai_message=ai_message,
-            emr_data=final_state["patient_data"],
-            status=final_state["status"],
-            protocol="AI Triage Assistant",
-            messages=final_state["messages"]
-        )
-        
-    except Exception as e:
-        logging.error(f"/chat endpoint error: {e}")
-        return AIResponse(
-            ai_message="I apologize, but I'm experiencing technical difficulties. Please describe your symptoms again, and if this is an emergency, please call 911 immediately.",
-            emr_data={},
-            status="error",
-            protocol="AI Triage Assistant",
-            messages=[]
-        )
+# @app.post("/triage/voice")
+# async def triage_with_voice(
+#     audio: UploadFile = File(...),
+#     session_id: str = Form(default_factory=lambda: str(uuid.uuid4())),
+#     voice_mode: bool = Form(default=True)
+# ):
+#     # Save uploaded audio
+#     audio_path = f"uploads/{session_id}-{audio.filename}"
+#     os.makedirs("uploads", exist_ok=True)
+#     with open(audio_path, "wb") as f:
+#         f.write(await audio.read())
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+#     # STT → Get text
+#     user_text = transcribe_audio(audio_path)
+
+#     # Run LangGraph agent
+#     initial_state = {
+#         "emr_fields": {},
+#         "chat_history": [],
+#         "last_question": None,
+#         "last_user_input": user_text,
+#         "is_complete": False,
+#         "next_bot_reply": None
+#     }
+#     state = triage_graph.invoke(initial_state)
+
+#     text_reply = state["next_bot_reply"]
+#     audio_url = None
+
+#     # TTS → If voice mode, convert response to audio
+#     if voice_mode:
+#         audio_filename = f"{session_id}-reply.mp3"
+#         audio_path = f"responses/{audio_filename}"
+#         synthesize_speech(text_reply, audio_path)
+#         audio_url = f"/responses/{audio_filename}"
+
+#     return {
+#         "text_reply": text_reply,
+#         "audio_reply_url": audio_url,
+#         "emr_snapshot": state["emr_fields"],
+#         "session_id": session_id
+#     }
+
+
+# @app.get("/responses/{filename}")
+# async def get_audio_file(filename: str):
+#     file_path = os.path.join("responses", filename)
+#     if os.path.exists(file_path):
+#         return FileResponse(file_path, media_type="audio/mpeg")
+#     return JSONResponse(status_code=404, content={"error": "File not found"})
+
+
+@app.post("/triage/text")
+async def triage_with_text(request: TextTriageRequest):
+    user_input = request.user_input
+    initial_state = {
+        "emr_fields": {},
+        "chat_history": [],
+        "last_question": None,
+        "last_user_input": user_input,
+        "is_complete": False,
+        "next_bot_reply": None
+    }
+    state = triage_graph.invoke(initial_state)
+
+    return {
+        "text_reply": state["next_bot_reply"],
+        "emr_snapshot": state["emr_fields"]
+    }
+
+# Compatibility endpoint for existing frontend
+@app.post("/chat")
+async def chat_endpoint(request: ChatRequest):
+    """Frontend compatibility endpoint with session management"""
+    message = request.message
+    session_id = request.session_id or str(uuid.uuid4())
+    
+    # Get or create session state
+    if session_id not in sessions:
+        sessions[session_id] = {
+            "emr_fields": {},
+            "chat_history": [],
+            "last_question": None,
+            "is_complete": False
+        }
+    
+    session_state = sessions[session_id]
+    
+    # Use the triage graph with existing session state
+    initial_state = {
+        "emr_fields": session_state["emr_fields"],
+        "chat_history": session_state["chat_history"],
+        "last_question": session_state["last_question"],
+        "last_user_input": message,
+        "is_complete": session_state["is_complete"],
+        "next_bot_reply": None
+    }
+    
+    state = triage_graph.invoke(initial_state)
+    
+    # Update session state
+    sessions[session_id] = {
+        "emr_fields": state["emr_fields"],
+        "chat_history": state.get("chat_history", []),
+        "last_question": state["next_bot_reply"],
+        "is_complete": state["is_complete"]
+    }
+    
+    # Determine status based on EMR fields and emergency flag
+    status = "active"
+    if state["emr_fields"].get("emergency_flag"):
+        status = "emergency_detected"
+    elif state["is_complete"]:
+        status = "complete"
+    
+    # Map EMR fields to frontend expected format
+    emr_data = {
+        "patient_info": {
+            "chief_complaint": state["emr_fields"].get("chief_complaint", "")
+        },
+        "symptoms": [state["emr_fields"].get("associated_symptoms", "")],
+        "assessment": {
+            "severity": state["emr_fields"].get("severity", ""),
+            "recommendations": [],
+            "next_steps": []
+        },
+        "triage_level": 1 if state["emr_fields"].get("emergency_flag") else 3
+    }
+    
+    return {
+        "ai_message": state["next_bot_reply"],
+        "status": status,
+        "protocol": "AI Triage Assessment",
+        "emr_data": emr_data,
+        "messages": []  # Could be populated with chat history if needed
+    }
+
+
+
+@app.get("/triage/summary")
+def get_final_summary(
+    chief_complaint: str = Query(...),
+    duration: str = Query(...),
+    severity: str = Query(...),
+    onset: str = Query(...),
+    location: str = Query(...),
+    associated_symptoms: str = Query(...),
+    emergency_flag: bool = Query(False),
+    # voice_mode: bool = Query(False)
+):
+    # Build EMR dict from query params
+    emr = {
+        "chief_complaint": chief_complaint,
+        "duration": duration,
+        "severity": severity,
+        "onset": onset,
+        "location": location,
+        "associated_symptoms": associated_symptoms,
+        "emergency_flag": emergency_flag
+    }
+
+    # Generate summary using Gemini
+    summary_input = summary_prompt(emr)
+    summary_response = llm.models.generate_content(model="gemini-2.5-flash",contents=summary_input)
+    summary_text = summary_response.text
+
+    # audio_url = None
+    # if voice_mode:
+    #     session_id = str(uuid.uuid4())
+    #     audio_filename = f"{session_id}-final-summary.mp3"
+    #     audio_path = f"responses/{audio_filename}"
+    #     synthesize_speech(summary_text, audio_path)
+    #     audio_url = f"/responses/{audio_filename}"
+
+    return {
+        "summary_text": summary_text,
+        "emr_fields": emr,
+        # "audio_reply_url": audio_url
+    }
+
+

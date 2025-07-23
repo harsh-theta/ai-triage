@@ -3,15 +3,19 @@ import { type NextRequest, NextResponse } from "next/server"
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const backendRes = await fetch("http://localhost:8000/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: body.message,
-        session_id: body.session_id,
-        // Optionally pass conversation_history if backend supports it
-      }),
-    })
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://106.201.228.100:9001"
+    const backendRes = await fetch(
+      `${backendUrl}/chat`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: body.message,
+          session_id: body.session_id,
+          // Optionally pass conversation_history if backend supports it
+        }),
+      },
+    )
 
     if (!backendRes.ok) {
       const errorData = await backendRes.json()

@@ -4,13 +4,14 @@ from typing import Dict, Optional, List
 from google import genai
 import os
 import json
-from prompts import field_prompt, summary_prompt
+from prompts import summary_prompt
 from dotenv import load_dotenv
 
 load_dotenv()
 
 # --- Setup Gemini ---
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+MODEL_NAME = os.getenv("MODEL_NAME")
 llm = genai.Client(api_key=GEMINI_API_KEY)
 
 REQUIRED_FIELDS = [
@@ -23,8 +24,8 @@ REQUIRED_FIELDS = [
     "emergency_flag"
 ]
 
-# Utility: Check for missing fields
 
+# Utility: Check for missing fields
 def get_missing_fields(emr_fields: dict) -> list:
     missing = []
     for field in REQUIRED_FIELDS:
@@ -32,26 +33,28 @@ def get_missing_fields(emr_fields: dict) -> list:
             missing.append(field)
     return missing
 
-# Extract EMR fields from chat history using LLM
 
+# Extract EMR fields from chat history using LLM
 def extract_emr_fields(chat_history: List[Dict]) -> dict:
     history_str = "\n".join([
         f"{msg['role'].capitalize()}: {msg['content']}" for msg in chat_history
     ])
+
     prompt = f"""
-You are a medical assistant. Extract the following EMR fields from this conversation. If a field is not mentioned, leave it blank or null.
+        You are a medical assistant. Extract the following EMR fields from this conversation. If a field is not mentioned, leave it blank or null.
 
-Fields: {REQUIRED_FIELDS}
+        Fields: {REQUIRED_FIELDS}
 
-For the 'severity' field, only accept values between 1 and 10. If the user gives a value outside this range, set severity to null and ask the user to provide a value between 1 and 10 in your next question.
+        For the 'severity' field, only accept values between 1 and 10. If the user gives a value outside this range, set severity to null and ask the user to provide a value between 1 and 10 in your next question.
 
-Conversation:
-{history_str}
+        Conversation:
+        {history_str}
 
-Return a valid JSON object with the fields as keys.
-"""
+        Return a valid JSON object with the fields as keys.
+    """
+
     try:
-        response = llm.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+        response = llm.models.generate_content(model=MODEL_NAME, contents=prompt)
         text = response.text.strip()
         if text.startswith('```json'):
             text = text.replace('```json', '').replace('```', '').strip()
@@ -64,19 +67,19 @@ Return a valid JSON object with the fields as keys.
         print(f"[extract_emr_fields] LLM extraction failed: {e}")
         return {}
 
-# Summarize EMR dict
 
+# Summarize EMR dict
 def get_emr_summary(emr_fields: dict) -> str:
     prompt = summary_prompt(emr_fields)
     try:
-        response = llm.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+        response = llm.models.generate_content(model=MODEL_NAME, contents=prompt)
         return response.text.strip()
     except Exception as e:
         print(f"[get_emr_summary] LLM summary failed: {e}")
         return "Summary unavailable."
 
-# Main triage loop
 
+# Main triage loop
 def triage_conversation(user_input: str, session_state: Dict = None) -> Dict:
     if session_state is None:
         session_state = {
@@ -115,26 +118,28 @@ def triage_conversation(user_input: str, session_state: Dict = None) -> Dict:
     history_str = "\n".join([
         f"{msg['role'].capitalize()}: {msg['content']}" for msg in chat_history
     ])
+
     prompt = f"""
-You are a helpful, friendly AI medical triage assistant. Your job is to ask the patient natural, conversational questions to gather the following required fields:
-{REQUIRED_FIELDS}
+        You are a helpful, friendly AI medical triage assistant. Your job is to ask the patient natural, conversational questions to gather the following required fields:
+        {REQUIRED_FIELDS}
 
-- You are directly talking with the user.
-- Do not repeat questions that have already been answered or asked.
-- If the user gives a negative answer (e.g., 'no', 'none', 'nothing else'), accept it and move on to the next field.
-- If all required fields are filled, or an emergency is detected, summarize the case and end the conversation.
-- Only ask one question at a time.
+        - You are directly talking with the user.
+        - Do not repeat questions that have already been answered or asked.
+        - If the user gives a negative answer (e.g., 'no', 'none', 'nothing else'), accept it and move on to the next field.
+        - If all required fields are filled, or an emergency is detected, summarize the case and end the conversation.
+        - Only ask one question at a time.
 
-Here is the conversation so far:
-{history_str}
+        Here is the conversation so far:
+        {history_str}
 
-Here are the fields still missing: {missing}
+        Here are the fields still missing: {missing}
 
-If more information is needed, ask the next best question to fill a missing field. If everything is complete, provide a summary and end the conversation.
-Respond with only your next message to the user.
-"""
+        If more information is needed, ask the next best question to fill a missing field. If everything is complete, provide a summary and end the conversation.
+        Respond with only your next message to the user.
+    """
+
     try:
-        response = llm.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+        response = llm.models.generate_content(model=MODEL_NAME, contents=prompt)
         bot_reply = response.text.strip()
     except Exception as e:
         print(f"[triage_conversation] LLM question failed: {e}")
@@ -153,6 +158,7 @@ Respond with only your next message to the user.
         "chat_history": chat_history,
         "last_question": bot_reply
     }
+
 
 # For compatibility with main.py
 

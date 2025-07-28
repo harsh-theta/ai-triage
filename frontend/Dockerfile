@@ -1,18 +1,45 @@
+# Build stage
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Copy package files
 COPY package.json package-lock.json* ./
 RUN npm install --legacy-peer-deps
 
+# Copy source code
 COPY . ./
+
+# Build the application
 RUN npm run build
 
-FROM node:20-alpine AS runner
-WORKDIR /app
+# Production nginx stage
+FROM nginx:alpine
 
-COPY --from=builder /app ./
+# Install wget for health checks
+RUN apk add --no-cache wget
 
-EXPOSE 8010
+# Set working directory
+WORKDIR /usr/share/nginx/html
 
-CMD ["npm", "start", "--", "-p", "8010"] 
+# Copy built application from builder stage
+COPY --from=builder /app/out .
+
+# Copy custom nginx configuration
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Create log directory and set permissions
+RUN mkdir -p /var/log/nginx && \
+    chmod -R 755 /usr/share/nginx/html && \
+    chown -R nginx:nginx /usr/share/nginx/html && \
+    chown -R nginx:nginx /var/log/nginx
+
+# Expose port
+EXPOSE 80
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=5 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost/health || exit 1
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"] 

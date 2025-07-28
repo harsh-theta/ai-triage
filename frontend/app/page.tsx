@@ -93,15 +93,11 @@ export default function TriagePage() {
 
     try {
       // Direct call to backend API - use TTS endpoint if voice mode is enabled
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:9001"
-      const basePath = process.env.NEXT_PUBLIC_API_BASE_PATH || ""
+      const basePath = process.env.NEXT_PUBLIC_API_BASE_PATH || "/intelligent-triage"
       const endpoint = voiceMode ? `${basePath}/chat/tts` : `${basePath}/chat`
       
-      // For production deployment, use relative URLs to avoid CORS issues
-      const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-      const apiUrl = isProduction ? endpoint : `${backendUrl}${endpoint}`
-      
-      const response = await fetch(apiUrl, {
+      // Use relative URLs - nginx will proxy to backend
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

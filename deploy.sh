@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# AI Triage Deployment Script - Proxy Mode Only
+# AI Triage Deployment Script - nginx-based deployment
 # Designed for demo.company.com/intelligent-triage/
 
 ACTION=${1:-deploy}
 
 case $ACTION in
   "deploy"|"start")
-    echo "🚀 Deploying AI Triage for proxy access"
+    echo "🚀 Deploying AI Triage with nginx"
     echo "📍 Will be accessible at: demo.company.com/intelligent-triage/"
     echo ""
     
@@ -19,12 +19,13 @@ case $ACTION in
     
     echo ""
     echo "✅ Deployment complete!"
-    echo "📱 Frontend: demo.company.com/intelligent-triage/"
-    echo "🔧 Backend API: demo.company.com/intelligent-triage/"
-    echo "📊 API Docs: demo.company.com/intelligent-triage/docs"
+    echo "📱 Frontend: http://demo.thetatechnolabs.com/intelligent-triage/"
+    echo "🔧 Backend API: http://demo.thetatechnolabs.com/intelligent-triage/"
+    echo "📊 API Docs: http://demo.thetatechnolabs.com/intelligent-triage/docs"
     echo ""
     echo "🔍 Check status: ./deploy.sh status"
     echo "📋 View logs: ./deploy.sh logs"
+    echo "🧪 Test deployment: ./test-nginx-deployment.sh"
     ;;
   "stop")
     echo "🛑 Stopping all services"

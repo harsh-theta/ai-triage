@@ -14,9 +14,6 @@ from tts_client import tts_client
 load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-print("-------------------------------")
-print(GEMINI_API_KEY)
-print("-------------------------------")
 MODEL_NAME = os.getenv("MODEL_NAME")
 print(MODEL_NAME)
 # Get root path for proxy deployment

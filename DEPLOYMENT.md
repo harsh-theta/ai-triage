@@ -1,46 +1,77 @@
 # Deployment Guide
 
-This application supports two deployment modes:
+This application supports two deployment modes using Docker Compose, with **proxy mode as the default**.
 
-## 1. Direct Access (IP:PORT)
+## Quick Start
+
+```bash
+# Deploy in proxy mode (default)
+./deploy.sh
+
+# Or explicitly specify proxy mode
+./deploy.sh proxy
+
+# Deploy in direct access mode
+./deploy.sh direct
+
+# Stop all services
+./deploy.sh stop
+
+# View logs
+./deploy.sh logs
+
+# Check status
+./deploy.sh status
+```
+
+## Deployment Modes
+
+### 1. Proxy Access (Default)
+For deployment behind a reverse proxy with base path `/intelligent-triage/`
+
+**Usage:**
+```bash
+./deploy.sh proxy
+# or simply
+./deploy.sh
+```
+
+**Access:**
+- Frontend: `demo.company.com/intelligent-triage/`
+- Backend API: `demo.company.com/intelligent-triage/`
+- API Docs: `demo.company.com/intelligent-triage/docs`
+
+### 2. Direct Access (IP:PORT)
 For development or direct server access via IP address and port.
 
-### Usage:
+**Usage:**
 ```bash
-./deploy-local.sh
+./deploy.sh direct
 ```
 
-### Access:
+**Access:**
 - Frontend: `http://localhost:8010` or `http://YOUR_IP:8010`
 - Backend API: `http://localhost:9001` or `http://YOUR_IP:9001`
+- API Docs: `http://localhost:9001/docs`
 
-## 2. Proxy Access (Subpath)
-For deployment behind a reverse proxy with a base path like `demo.company.com/intelligent-triage/`
+## Docker Compose Configuration
 
-### Usage:
-```bash
-./deploy-proxy.sh
-```
+### Main Configuration (`docker-compose.yml`)
+Default configuration with proxy mode enabled:
+- `ROOT_PATH=/intelligent-triage` for backend
+- `NEXT_PUBLIC_BASE_PATH=/intelligent-triage` for frontend
 
-### Access:
-- Frontend: `demo.company.com/intelligent-triage/`
-- Backend API: `demo.company.com/intelligent-triage/api/`
-
-## Configuration Files
-
-### `.env.local` - Direct Access
-```
-BASE_PATH=
-ROOT_PATH=
-```
-
-### `.env.proxy` - Proxy Access
-```
-BASE_PATH=/intelligent-triage
-ROOT_PATH=/intelligent-triage
-```
+### Override Configuration (`docker-compose.direct.yml`)
+Override for direct access mode:
+- `ROOT_PATH=""` for backend (no base path)
+- `NEXT_PUBLIC_BASE_PATH=""` for frontend (no base path)
 
 ## How It Works
+
+### Docker Compose Strategy
+- **Default**: `docker-compose up` runs in proxy mode
+- **Direct Mode**: `docker-compose -f docker-compose.yml -f docker-compose.direct.yml up` overrides environment variables for direct access
+- **Easy Switching**: Use deployment scripts to switch between modes
 
 ### Frontend (Next.js)
 - Uses `basePath` and `assetPrefix` in `next.config.mjs` to handle subpath routing
@@ -74,12 +105,33 @@ location /intelligent-triage/api/ {
 }
 ```
 
+## Available Scripts
+
+| Script | Description |
+|--------|-------------|
+| `./deploy.sh` | Deploy in proxy mode (default) |
+| `./deploy.sh proxy` | Deploy in proxy mode explicitly |
+| `./deploy.sh direct` | Deploy in direct access mode |
+| `./deploy.sh stop` | Stop all services |
+| `./deploy.sh logs` | View service logs |
+| `./deploy.sh status` | Check service status |
+| `./deploy-proxy.sh` | Direct proxy deployment script |
+| `./deploy-local.sh` | Direct local deployment script |
+
 ## Switching Between Modes
 
 You can easily switch between deployment modes:
 
-1. Stop current deployment: `docker-compose down`
-2. Run the desired deployment script: `./deploy-local.sh` or `./deploy-proxy.sh`
+```bash
+# Switch to proxy mode
+./deploy.sh proxy
+
+# Switch to direct mode  
+./deploy.sh direct
+
+# Stop everything
+./deploy.sh stop
+```
 
 ## Troubleshooting
 

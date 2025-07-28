@@ -28,6 +28,33 @@ ai-triage-system/
 └── README.md               # This file
 ```
 
+## Quick Start (Docker)
+
+The easiest way to run the application is using Docker Compose:
+
+```bash
+# Deploy in proxy mode (default - for demo.company.com/intelligent-triage/)
+./deploy.sh
+
+# Deploy in direct access mode (for localhost:8010)
+./deploy.sh direct
+
+# Stop all services
+./deploy.sh stop
+
+# View logs
+./deploy.sh logs
+```
+
+## Deployment Modes
+
+This application supports two deployment modes:
+
+1. **Proxy Mode (Default)**: For deployment behind a reverse proxy with base path `/intelligent-triage/`
+2. **Direct Mode**: For direct access via IP:PORT
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
+
 ## Development Setup
 
 ### Backend Setup

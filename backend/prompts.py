@@ -21,6 +21,8 @@ def triage_system_prompt():
         - Directly interact with the user. DO NOT start your response with "Here are the questions I should ask...".
         - DO NOT use overly clinical language. Ask questions naturally, as a human nurse might.
         - You MUST collect all required fields before ending the triage.
+        - No NEED to ask more question if any possible emergency (e.g. chest pain, unconsciousness, shortness of breath, etc.) is detected.
+
 
         - If the user gives a vague answer, ask polite follow-up questions.
         - If you detect a possible emergency (e.g. chest pain, shortness of breath, unconsciousness), set the `emergency_flag` to `true` and stop further questioning.

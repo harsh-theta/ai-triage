@@ -25,6 +25,9 @@ ai-triage-system/
 │   ├── src/                # Source code
 │   ├── package.json        # Node.js dependencies
 │   └── .env.example        # Environment variables template
+├── nginx.conf              # Nginx reverse proxy configuration
+├── deploy.sh               # Deployment script
+├── test-deployment.sh      # Deployment testing script
 └── README.md               # This file
 ```
 
@@ -44,6 +47,9 @@ The easiest way to run the application is using Docker Compose:
 
 # Check status
 ./deploy.sh status
+
+# Test deployment
+./test-deployment.sh
 ```
 
 ## Deployment Configuration
@@ -53,6 +59,18 @@ This application is configured for **proxy deployment only** with the base path 
 - **Access URL**: `demo.company.com/intelligent-triage/`
 - **Backend API**: `demo.company.com/intelligent-triage/`
 - **API Documentation**: `demo.company.com/intelligent-triage/docs`
+
+### Recent Fixes (v1.1)
+
+**Fixed Issues:**
+1. **Docker Networking**: Frontend now correctly connects to backend using `http://backend:9001`
+2. **URL Routing**: Fixed nginx configuration to properly handle `/intelligent-triage/` paths
+3. **CORS Issues**: Added proper CORS headers and relative URL handling for production
+4. **Double Path Issue**: Resolved the `/intelligent-triage/intelligent-triage` routing problem
+
+**New Files:**
+- `nginx.conf`: Complete nginx reverse proxy configuration
+- `test-deployment.sh`: Comprehensive deployment testing script
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions and reverse proxy configuration.
 
@@ -117,32 +135,39 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions and reve
 ## Technology Stack
 
 ### Backend
-- FastAPI - Web framework
-- Python 3.12+ - Programming language
-- Google Generative AI - AI/ML capabilities
-- LangGraph - AI workflow orchestration
-- Uvicorn - ASGI server
+- **FastAPI**: Modern Python web framework
+- **LangGraph**: State machine for conversation flow
+- **Google Gemini**: Large language model for AI responses
+- **Pydantic**: Data validation and serialization
 
 ### Frontend
-- React 18 - UI framework
-- TypeScript - Type safety
-- Vite - Build tool
-- Tailwind CSS - Styling
-- Axios - HTTP client
+- **Next.js**: React framework with server-side rendering
+- **TypeScript**: Type-safe JavaScript
+- **Tailwind CSS**: Utility-first CSS framework
+- **shadcn/ui**: Modern UI component library
 
-## Environment Variables
+## Troubleshooting
 
-### Backend (.env)
-```
-GOOGLE_API_KEY=your_google_api_key_here
-HOST=localhost
-PORT=8000
-DEBUG=True
-FRONTEND_URL=http://localhost:5173
+### Common Deployment Issues
+
+1. **404 on `/intelligent-triage`**: Use the provided `nginx.conf` file
+2. **Double path working**: This indicates incorrect nginx configuration
+3. **Backend connection errors**: Ensure `NEXT_PUBLIC_BACKEND_URL=http://backend:9001` in docker-compose.yml
+4. **CORS errors**: The nginx configuration includes proper CORS headers
+
+### Testing Deployment
+
+Run the test script to verify everything is working:
+
+```bash
+./test-deployment.sh
 ```
 
-### Frontend (.env)
-```
-VITE_API_BASE_URL=http://localhost:8000
-VITE_DEV_MODE=true
-```
+This will test all endpoints and provide a detailed report of any issues.
+
+## Security Considerations
+
+- **No Persistent Storage**: All data is stored in memory only
+- **Session Isolation**: Each conversation session is isolated
+- **Input Validation**: All inputs are validated using Pydantic models
+- **CORS Configuration**: Properly configured for production deployment

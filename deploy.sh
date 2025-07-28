@@ -19,9 +19,9 @@ case $ACTION in
     
     echo ""
     echo "✅ Deployment complete!"
-    echo "📱 Frontend: http://demo.thetatechnolabs.com/intelligent-triage/"
-    echo "🔧 Backend API: http://demo.thetatechnolabs.com/intelligent-triage/"
-    echo "📊 API Docs: http://demo.thetatechnolabs.com/intelligent-triage/docs"
+    echo "📱 Frontend: http://demo.thetatechnolabs.com:8010/intelligent-triage/"
+    echo "🔧 Backend API: http://demo.thetatechnolabs.com:8010/intelligent-triage/"
+    echo "📊 API Docs: http://demo.thetatechnolabs.com:8010/intelligent-triage/docs"
     echo ""
     echo "🔍 Check status: ./deploy.sh status"
     echo "📋 View logs: ./deploy.sh logs"

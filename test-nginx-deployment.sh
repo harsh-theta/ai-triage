@@ -34,14 +34,14 @@ echo ""
 echo -e "${BLUE}5. Testing nginx frontend...${NC}"
 
 # Test nginx health check
-if curl -s http://localhost/health | grep -q "OK"; then
+if curl -s http://localhost:8010/health | grep -q "OK"; then
     echo -e "${GREEN}✅ nginx health check passed${NC}"
 else
     echo -e "${RED}❌ nginx health check failed${NC}"
 fi
 
 # Test frontend static files
-if curl -s -o /dev/null -w "%{http_code}" http://localhost/intelligent-triage/ | grep -q "200"; then
+if curl -s -o /dev/null -w "%{http_code}" http://localhost:8010/intelligent-triage/ | grep -q "200"; then
     echo -e "${GREEN}✅ Frontend accessible at /intelligent-triage/${NC}"
 else
     echo -e "${RED}❌ Frontend not accessible${NC}"
@@ -51,7 +51,7 @@ echo ""
 echo -e "${BLUE}6. Testing API proxying...${NC}"
 
 # Test API endpoint through nginx
-API_RESPONSE=$(curl -s -X POST http://localhost/intelligent-triage/chat \
+API_RESPONSE=$(curl -s -X POST http://localhost:8010/intelligent-triage/chat \
   -H "Content-Type: application/json" \
   -d '{"message": "test", "session_id": "test123"}' 2>/dev/null)
 
@@ -62,7 +62,7 @@ else
 fi
 
 # Test backend health through nginx
-if curl -s http://localhost/intelligent-triage/tts/health | grep -q "tts_service_healthy"; then
+if curl -s http://localhost:8010/intelligent-triage/tts/health | grep -q "tts_service_healthy"; then
     echo -e "${GREEN}✅ Backend health check through nginx working${NC}"
 else
     echo -e "${RED}❌ Backend health check through nginx failed${NC}"
@@ -72,14 +72,14 @@ echo ""
 echo -e "${BLUE}7. Testing routing...${NC}"
 
 # Test that double path doesn't work
-if curl -s -o /dev/null -w "%{http_code}" http://localhost/intelligent-triage/intelligent-triage/ | grep -q "404"; then
+if curl -s -o /dev/null -w "%{http_code}" http://localhost:8010/intelligent-triage/intelligent-triage/ | grep -q "404"; then
     echo -e "${GREEN}✅ Double path correctly returns 404${NC}"
 else
     echo -e "${YELLOW}⚠️  Double path test inconclusive${NC}"
 fi
 
 # Test root redirect
-if curl -s -o /dev/null -w "%{http_code}" http://localhost/ | grep -q "301"; then
+if curl -s -o /dev/null -w "%{http_code}" http://localhost:8010/ | grep -q "301"; then
     echo -e "${GREEN}✅ Root redirects to /intelligent-triage/${NC}"
 else
     echo -e "${RED}❌ Root redirect failed${NC}"
@@ -113,9 +113,9 @@ echo ""
 echo -e "${GREEN}🎉 nginx-based deployment test complete!${NC}"
 echo ""
 echo "✅ Your application should now work at:"
-echo "   - Frontend: http://demo.thetatechnolabs.com/intelligent-triage/"
-echo "   - API Docs: http://demo.thetatechnolabs.com/intelligent-triage/docs"
-echo "   - Health: http://demo.thetatechnolabs.com/intelligent-triage/tts/health"
+echo "   - Frontend: http://demo.thetatechnolabs.com:8010/intelligent-triage/"
+echo "   - API Docs: http://demo.thetatechnolabs.com:8010/intelligent-triage/docs"
+echo "   - Health: http://demo.thetatechnolabs.com:8010/intelligent-triage/tts/health"
 echo ""
 echo "🔧 Key improvements:"
 echo "   - Static files served by nginx (faster)"
@@ -124,6 +124,6 @@ echo "   - No more CORS issues"
 echo "   - Better caching and compression"
 echo ""
 echo "📋 Next steps:"
-echo "1. Test your domain: http://demo.thetatechnolabs.com/intelligent-triage/"
+echo "1. Test your domain: http://demo.thetatechnolabs.com:8010/intelligent-triage/"
 echo "2. Deploy to your Ubuntu server"
 echo "3. Configure your domain to point to your server IP" 

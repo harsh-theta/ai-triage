@@ -8,6 +8,10 @@ services:
       - ./backend/.env
     ports:
       - "9001:9001"
+    environment:
+      - GEMINI_API_KEY="AIzaSyAHK_B3M7P-lfPx_z2sF0AtiPUQLkTQP-o"
+      - MODEL_NAME="gemini-2.5-flash"
+      - TTS_SERVICE_URL="http://106.201.228.100:9003"
     volumes:
       - ./backend/responses:/app/responses
       - ./backend/uploads:/app/uploads

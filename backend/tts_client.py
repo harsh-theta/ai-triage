@@ -3,6 +3,9 @@ import os
 from typing import Optional
 import uuid
 import logging
+from dotenv import load_dotenv
+
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +17,7 @@ class TTSClient:
         Args:
             base_url: Base URL of the TTS microservice (e.g., "http://localhost:9003")
         """
-        self.base_url = base_url or os.getenv("TTS_SERVICE_URL", "http://localhost:9003")
+        self.base_url = base_url or os.getenv("TTS_SERVICE_URL")
         
     def text_to_speech(self, text: str, voice: str = "female", output_dir: str = "audio") -> Optional[str]:
         """

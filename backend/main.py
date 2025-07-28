@@ -16,6 +16,8 @@ load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 MODEL_NAME = os.getenv("MODEL_NAME")
+# Get root path for proxy deployment
+ROOT_PATH = os.getenv("ROOT_PATH", "")
 
 # --- Setup Gemini ---
 llm = genai.Client(api_key=GEMINI_API_KEY)
@@ -32,7 +34,7 @@ class TTSRequest(BaseModel):
     text: str
     voice: str = "female"
 
-app = FastAPI()
+app = FastAPI(root_path=ROOT_PATH)
 
 # Enable CORS if needed
 app.add_middleware(

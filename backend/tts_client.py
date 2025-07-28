@@ -19,26 +19,18 @@ class TTSClient:
         """
         self.base_url = base_url or os.getenv("TTS_SERVICE_URL")
         
-    def text_to_speech(self, text: str, voice: str = "female", output_dir: str = "audio") -> Optional[str]:
+    def text_to_speech(self, text: str, voice: str = "female") -> Optional[str]:
         """
         Convert text to speech using the TTS microservice
         
         Args:
             text: Text to convert to speech
             voice: Voice type (default: "female")
-            output_dir: Directory to save the audio file
             
         Returns:
-            Path to the generated audio file or None if failed
+            Direct audio URL from TTS service or None if failed
         """
         try:
-            # Ensure output directory exists
-            os.makedirs(output_dir, exist_ok=True)
-            
-            # Generate unique filename
-            filename = f"response_{uuid.uuid4().hex[:16]}_{int(uuid.uuid4().int % 10000000000)}.wav"
-            output_path = os.path.join(output_dir, filename)
-            
             # Prepare request payload
             payload = {
                 "text": text,
@@ -47,18 +39,22 @@ class TTSClient:
             
             # Make request to TTS microservice
             response = requests.post(
-                f"{self.base_url}/tts",
+                f"{self.base_url}/speak",
                 json=payload,
                 timeout=30
             )
             
             if response.status_code == 200:
-                # Save audio content to file
-                with open(output_path, "wb") as f:
-                    f.write(response.content)
+                # Parse JSON response to get audio URL
+                response_data = response.json()
+                audio_url = response_data.get("audio_url")
                 
-                logger.info(f"TTS audio saved to: {output_path}")
-                return output_path
+                if audio_url:
+                    logger.info(f"TTS audio URL received: {audio_url}")
+                    return audio_url
+                else:
+                    logger.error(f"No audio_url in TTS response: {response_data}")
+                    return None
             else:
                 logger.error(f"TTS service error: {response.status_code} - {response.text}")
                 return None

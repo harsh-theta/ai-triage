@@ -1,18 +1,12 @@
 # Deployment Guide
 
-This application supports two deployment modes using Docker Compose, with **proxy mode as the default**.
+This application is configured for **proxy deployment only** with the base path `/intelligent-triage/`.
 
 ## Quick Start
 
 ```bash
-# Deploy in proxy mode (default)
+# Deploy the application
 ./deploy.sh
-
-# Or explicitly specify proxy mode
-./deploy.sh proxy
-
-# Deploy in direct access mode
-./deploy.sh direct
 
 # Stop all services
 ./deploy.sh stop
@@ -22,18 +16,20 @@ This application supports two deployment modes using Docker Compose, with **prox
 
 # Check status
 ./deploy.sh status
+
+# Restart services
+./deploy.sh restart
 ```
 
-## Deployment Modes
+## Proxy Access Configuration
 
-### 1. Proxy Access (Default)
-For deployment behind a reverse proxy with base path `/intelligent-triage/`
+The application is designed to work behind a reverse proxy with the base path `/intelligent-triage/`.
 
 **Usage:**
 ```bash
-./deploy.sh proxy
-# or simply
 ./deploy.sh
+# or
+./deploy.sh deploy
 ```
 
 **Access:**
@@ -41,47 +37,24 @@ For deployment behind a reverse proxy with base path `/intelligent-triage/`
 - Backend API: `demo.company.com/intelligent-triage/`
 - API Docs: `demo.company.com/intelligent-triage/docs`
 
-### 2. Direct Access (IP:PORT)
-For development or direct server access via IP address and port.
-
-**Usage:**
-```bash
-./deploy.sh direct
-```
-
-**Access:**
-- Frontend: `http://localhost:8010` or `http://YOUR_IP:8010`
-- Backend API: `http://localhost:9001` or `http://YOUR_IP:9001`
-- API Docs: `http://localhost:9001/docs`
-
 ## Docker Compose Configuration
 
 ### Main Configuration (`docker-compose.yml`)
-Default configuration with proxy mode enabled:
+Configured for proxy deployment with `/intelligent-triage/` base path:
 - `ROOT_PATH=/intelligent-triage` for backend
-- `NEXT_PUBLIC_BASE_PATH=/intelligent-triage` for frontend
-
-### Override Configuration (`docker-compose.direct.yml`)
-Override for direct access mode:
-- `ROOT_PATH=""` for backend (no base path)
-- `NEXT_PUBLIC_BASE_PATH=""` for frontend (no base path)
+- Frontend configured with hardcoded base path in `next.config.mjs`
 
 ## How It Works
 
-### Docker Compose Strategy
-- **Default**: `docker-compose up` runs in proxy mode
-- **Direct Mode**: `docker-compose -f docker-compose.yml -f docker-compose.direct.yml up` overrides environment variables for direct access
-- **Easy Switching**: Use deployment scripts to switch between modes
-
 ### Frontend (Next.js)
-- Uses `basePath` and `assetPrefix` in `next.config.mjs` to handle subpath routing
-- Environment variable `NEXT_PUBLIC_BASE_PATH` controls the base path
-- API routes automatically prepend the root path when calling backend
+- Uses `basePath: '/intelligent-triage'` and `assetPrefix: '/intelligent-triage'` in `next.config.mjs`
+- All static assets and routing work correctly under the `/intelligent-triage/` path
+- API routes call backend with the correct base path
 
 ### Backend (FastAPI)
-- Uses `root_path` parameter in FastAPI constructor
-- Environment variable `ROOT_PATH` controls the API base path
-- All routes automatically work under the specified root path
+- Uses `root_path="/intelligent-triage"` parameter in FastAPI constructor
+- Environment variable `ROOT_PATH=/intelligent-triage` controls the API base path
+- All API endpoints automatically work under `/intelligent-triage/` path
 
 ## Reverse Proxy Configuration
 
@@ -109,29 +82,13 @@ location /intelligent-triage/api/ {
 
 | Script | Description |
 |--------|-------------|
-| `./deploy.sh` | Deploy in proxy mode (default) |
-| `./deploy.sh proxy` | Deploy in proxy mode explicitly |
-| `./deploy.sh direct` | Deploy in direct access mode |
+| `./deploy.sh` | Deploy the application (default) |
+| `./deploy.sh deploy` | Deploy the application explicitly |
 | `./deploy.sh stop` | Stop all services |
 | `./deploy.sh logs` | View service logs |
 | `./deploy.sh status` | Check service status |
-| `./deploy-proxy.sh` | Direct proxy deployment script |
-| `./deploy-local.sh` | Direct local deployment script |
-
-## Switching Between Modes
-
-You can easily switch between deployment modes:
-
-```bash
-# Switch to proxy mode
-./deploy.sh proxy
-
-# Switch to direct mode  
-./deploy.sh direct
-
-# Stop everything
-./deploy.sh stop
-```
+| `./deploy.sh restart` | Restart all services |
+| `./test-deployment.sh` | Test deployment and endpoints |
 
 ## Troubleshooting
 

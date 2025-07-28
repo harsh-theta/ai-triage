@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 from agent_graph import build_triad_agent
 import uuid
 import os
@@ -15,7 +14,11 @@ from tts_client import tts_client
 load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+print("-------------------------------")
+print(GEMINI_API_KEY)
+print("-------------------------------")
 MODEL_NAME = os.getenv("MODEL_NAME")
+print(MODEL_NAME)
 # Get root path for proxy deployment
 ROOT_PATH = os.getenv("ROOT_PATH", "")
 
@@ -87,18 +90,16 @@ async def triage_with_text_and_tts(request: TextTriageRequest):
     state = triage_graph.invoke(initial_state)
     
     # Generate TTS for the response
-    audio_path = tts_client.text_to_speech(state["next_bot_reply"])
+    audio_url = tts_client.text_to_speech(state["next_bot_reply"])
     
     response = {
         "text_reply": state["next_bot_reply"],
         "emr_snapshot": state["emr_fields"]
     }
     
-    # Add audio info if TTS was successful
-    if audio_path:
-        audio_filename = os.path.basename(audio_path)
-        response["audio_path"] = audio_path
-        response["audio_url"] = f"/audio/{audio_filename}"
+    # Add audio URL if TTS was successful
+    if audio_url:
+        response["audio_url"] = audio_url
     
     return response
 
@@ -206,22 +207,15 @@ def get_final_summary(
 @app.post("/tts")
 async def text_to_speech(request: TTSRequest):
     """Convert text to speech using the TTS microservice"""
-    audio_path = tts_client.text_to_speech(request.text, request.voice)
+    audio_url = tts_client.text_to_speech(request.text, request.voice)
     
-    if audio_path and os.path.exists(audio_path):
-        return {"audio_path": audio_path, "status": "success"}
+    if audio_url:
+        return {"audio_url": audio_url, "status": "success"}
     else:
         return {"error": "Failed to generate audio", "status": "error"}
 
 
-@app.get("/audio/{filename}")
-async def get_audio(filename: str):
-    """Serve audio files"""
-    audio_path = os.path.join("audio", filename)
-    if os.path.exists(audio_path):
-        return FileResponse(audio_path, media_type="audio/wav")
-    else:
-        return {"error": "Audio file not found"}
+# Removed /audio/{filename} endpoint - now using direct TTS service URLs
 
 
 @app.post("/chat/tts")
@@ -232,13 +226,16 @@ async def chat_with_tts(request: ChatRequest):
     
     # Generate TTS for the AI response
     ai_message = chat_response["ai_message"]
-    audio_path = tts_client.text_to_speech(ai_message)
+    print(f"DEBUG: Generating TTS for message: '{ai_message}'")
+    audio_url = tts_client.text_to_speech(ai_message)
+    print(f"DEBUG: TTS result: {audio_url}")
     
-    # Add audio info to response
-    if audio_path:
-        audio_filename = os.path.basename(audio_path)
-        chat_response["audio_path"] = audio_path
-        chat_response["audio_url"] = f"/audio/{audio_filename}"
+    # Add audio URL directly from TTS service
+    if audio_url:
+        chat_response["audio_url"] = audio_url
+        print(f"DEBUG: Added audio_url: {chat_response['audio_url']}")
+    else:
+        print("DEBUG: No audio_url returned from TTS")
     
     return chat_response
 

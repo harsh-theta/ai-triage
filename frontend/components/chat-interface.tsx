@@ -30,7 +30,7 @@ export function ChatInterface({ messages, onSendMessage, disabled = false, isLoa
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
-  // TTS: Speak assistant messages when they arrive and voiceMode is on
+  // TTS: Play assistant messages when they arrive and voiceMode is on
   useEffect(() => {
     if (!voiceMode) return
     if (messages.length === 0) return
@@ -38,10 +38,25 @@ export function ChatInterface({ messages, onSendMessage, disabled = false, isLoa
     if (lastMsg.role === "assistant" && lastMsg.content) {
       // Cancel any ongoing speech
       window.speechSynthesis.cancel()
-      const utter = new window.SpeechSynthesisUtterance(lastMsg.content)
-      utter.rate = 1
-      utter.pitch = 1
-      window.speechSynthesis.speak(utter)
+      
+      // Use TTS microservice audio if available, otherwise fallback to browser TTS
+      if (lastMsg.audio_url) {
+        const audio = new Audio(lastMsg.audio_url)
+        audio.play().catch(error => {
+          console.error("Failed to play TTS audio:", error)
+          // Fallback to browser TTS if audio fails
+          const utter = new window.SpeechSynthesisUtterance(lastMsg.content)
+          utter.rate = 1
+          utter.pitch = 1
+          window.speechSynthesis.speak(utter)
+        })
+      } else {
+        // Fallback to browser TTS if no audio_url
+        const utter = new window.SpeechSynthesisUtterance(lastMsg.content)
+        utter.rate = 1
+        utter.pitch = 1
+        window.speechSynthesis.speak(utter)
+      }
     }
   }, [messages, voiceMode])
 

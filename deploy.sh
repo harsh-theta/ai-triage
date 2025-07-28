@@ -1,16 +1,30 @@
 #!/bin/bash
 
-# Main deployment script with mode selection
-MODE=${1:-proxy}
+# AI Triage Deployment Script - Proxy Mode Only
+# Designed for demo.company.com/intelligent-triage/
 
-case $MODE in
-  "proxy")
-    echo "🌐 Deploying in PROXY mode (default)"
-    ./deploy-proxy.sh
-    ;;
-  "direct")
-    echo "🔗 Deploying in DIRECT mode"
-    ./deploy-local.sh
+ACTION=${1:-deploy}
+
+case $ACTION in
+  "deploy"|"start")
+    echo "🚀 Deploying AI Triage for proxy access"
+    echo "📍 Will be accessible at: demo.company.com/intelligent-triage/"
+    echo ""
+    
+    # Stop any running containers
+    docker-compose down
+    
+    # Build and start services
+    docker-compose up --build -d
+    
+    echo ""
+    echo "✅ Deployment complete!"
+    echo "📱 Frontend: demo.company.com/intelligent-triage/"
+    echo "🔧 Backend API: demo.company.com/intelligent-triage/"
+    echo "📊 API Docs: demo.company.com/intelligent-triage/docs"
+    echo ""
+    echo "🔍 Check status: ./deploy.sh status"
+    echo "📋 View logs: ./deploy.sh logs"
     ;;
   "stop")
     echo "🛑 Stopping all services"
@@ -25,21 +39,27 @@ case $MODE in
     echo "🔍 Service status:"
     docker-compose ps
     ;;
+  "restart")
+    echo "🔄 Restarting services..."
+    docker-compose restart
+    echo "✅ Services restarted"
+    ;;
   *)
-    echo "Usage: $0 [proxy|direct|stop|logs|status]"
+    echo "AI Triage Deployment Script"
+    echo "Usage: $0 [deploy|stop|logs|status|restart]"
     echo ""
-    echo "Modes:"
-    echo "  proxy  - Deploy for proxy access (demo.company.com/intelligent-triage/) [DEFAULT]"
-    echo "  direct - Deploy for direct access (IP:PORT)"
-    echo "  stop   - Stop all services"
-    echo "  logs   - Show service logs"
-    echo "  status - Show service status"
+    echo "Commands:"
+    echo "  deploy   - Deploy the application (default)"
+    echo "  stop     - Stop all services"
+    echo "  logs     - Show service logs"
+    echo "  status   - Show service status"
+    echo "  restart  - Restart all services"
     echo ""
     echo "Examples:"
-    echo "  $0           # Deploy in proxy mode (default)"
-    echo "  $0 proxy     # Deploy in proxy mode"
-    echo "  $0 direct    # Deploy in direct mode"
+    echo "  $0           # Deploy the application"
+    echo "  $0 deploy    # Deploy the application"
     echo "  $0 stop      # Stop all services"
+    echo "  $0 logs      # View logs"
     exit 1
     ;;
 esac

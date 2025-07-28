@@ -17,6 +17,7 @@ export interface Message {
   role: "user" | "assistant"
   content: string
   timestamp: Date
+  audio_url?: string
 }
 
 export interface EmrData {
@@ -91,8 +92,11 @@ export default function TriagePage() {
     }))
 
     try {
-      // Simulate API call - replace with actual endpoint
-      const response = await fetch("/api/chat", {
+      // Direct call to backend API - use TTS endpoint if voice mode is enabled
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:9001"
+      const basePath = process.env.NEXT_PUBLIC_API_BASE_PATH || ""
+      const endpoint = voiceMode ? `${basePath}/chat/tts` : `${basePath}/chat`
+      const response = await fetch(`${backendUrl}${endpoint}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -100,7 +104,6 @@ export default function TriagePage() {
         body: JSON.stringify({
           message: content,
           session_id: state.session_id,
-          conversation_history: state.messages,
         }),
       })
 
@@ -126,8 +129,9 @@ export default function TriagePage() {
       const aiMessage: Message = {
         id: generateId(),
         role: "assistant",
-        content: data.message,
+        content: data.ai_message, // Backend returns ai_message, not message
         timestamp: new Date(),
+        audio_url: data.audio_url, // Include audio URL from TTS microservice
       }
 
       setState((prev) => ({
@@ -140,7 +144,7 @@ export default function TriagePage() {
             /summary|in summary|all the information|this concludes|goodbye|bye|final emr/i.test(aiMessage.content)
               ? "complete"
               : prev.status),
-        current_protocol: data.current_protocol || prev.current_protocol,
+        current_protocol: data.protocol || prev.current_protocol,
         is_loading: false,
         error_message: undefined,
       }))

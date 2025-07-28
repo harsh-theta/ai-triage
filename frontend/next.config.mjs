@@ -9,10 +9,9 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // Configure base path for proxy deployment
-  basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
-  assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH || '',
-  // Ensure trailing slash handling
+  // Configure for proxy deployment with /intelligent-triage/ base path
+  basePath: '/intelligent-triage',
+  assetPrefix: '/intelligent-triage',
   trailingSlash: false,
 }
 

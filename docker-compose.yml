@@ -8,10 +8,7 @@ services:
     ports:
       - "9001:9001"
     environment:
-      - GEMINI_API_KEY="AIzaSyAHK_B3M7P-lfPx_z2sF0AtiPUQLkTQP-o"
-      - MODEL_NAME="gemini-2.5-flash"
-      - TTS_SERVICE_URL="http://106.201.228.100:9003"
-      # Default: proxy deployment with base path
+      - TTS_SERVICE_URL=http://106.201.228.100:9003
       - ROOT_PATH=/intelligent-triage
     volumes:
       - ./backend/responses:/app/responses
@@ -25,8 +22,6 @@ services:
       - "8010:8010"
     environment:
       - NEXT_PUBLIC_BACKEND_URL=http://backend:9001
-      # Default: proxy deployment with base path
-      - NEXT_PUBLIC_BASE_PATH=/intelligent-triage
-      - ROOT_PATH=/intelligent-triage
+      - NEXT_PUBLIC_API_BASE_PATH=
     depends_on:
       - backend 

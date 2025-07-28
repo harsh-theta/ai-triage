@@ -5,7 +5,6 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "elevenlabs>=2.8.0",
     "fastapi>=0.116.1",
     "google-genai>=1.26.0",
     "langgraph>=0.5.4",

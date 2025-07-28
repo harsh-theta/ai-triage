@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from agent_graph import build_triad_agent
 import uuid
 import os
@@ -8,6 +9,7 @@ from prompts import summary_prompt
 from google import genai
 from pydantic import BaseModel
 from dotenv import load_dotenv
+from tts_client import tts_client
 
 # Load environment variables
 load_dotenv()
@@ -25,6 +27,10 @@ class TextTriageRequest(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     session_id: str = None
+
+class TTSRequest(BaseModel):
+    text: str
+    voice: str = "female"
 
 app = FastAPI()
 
@@ -62,6 +68,37 @@ async def triage_with_text(request: TextTriageRequest):
         "text_reply": state["next_bot_reply"],
         "emr_snapshot": state["emr_fields"]
     }
+
+
+@app.post("/triage/text/tts")
+async def triage_with_text_and_tts(request: TextTriageRequest):
+    """Triage endpoint that also returns TTS audio"""
+    user_input = request.user_input
+    initial_state = {
+        "emr_fields": {},
+        "chat_history": [],
+        "last_question": None,
+        "last_user_input": user_input,
+        "is_complete": False,
+        "next_bot_reply": None
+    }
+    state = triage_graph.invoke(initial_state)
+    
+    # Generate TTS for the response
+    audio_path = tts_client.text_to_speech(state["next_bot_reply"])
+    
+    response = {
+        "text_reply": state["next_bot_reply"],
+        "emr_snapshot": state["emr_fields"]
+    }
+    
+    # Add audio info if TTS was successful
+    if audio_path:
+        audio_filename = os.path.basename(audio_path)
+        response["audio_path"] = audio_path
+        response["audio_url"] = f"/audio/{audio_filename}"
+    
+    return response
 
 # Compatibility endpoint for existing frontend
 @app.post("/chat")
@@ -163,4 +200,53 @@ def get_final_summary(
         "emr_fields": emr
     }
 
+
+@app.post("/tts")
+async def text_to_speech(request: TTSRequest):
+    """Convert text to speech using the TTS microservice"""
+    audio_path = tts_client.text_to_speech(request.text, request.voice)
+    
+    if audio_path and os.path.exists(audio_path):
+        return {"audio_path": audio_path, "status": "success"}
+    else:
+        return {"error": "Failed to generate audio", "status": "error"}
+
+
+@app.get("/audio/{filename}")
+async def get_audio(filename: str):
+    """Serve audio files"""
+    audio_path = os.path.join("audio", filename)
+    if os.path.exists(audio_path):
+        return FileResponse(audio_path, media_type="audio/wav")
+    else:
+        return {"error": "Audio file not found"}
+
+
+@app.post("/chat/tts")
+async def chat_with_tts(request: ChatRequest):
+    """Chat endpoint that also returns TTS audio"""
+    # Get regular chat response
+    chat_response = await chat_endpoint(request)
+    
+    # Generate TTS for the AI response
+    ai_message = chat_response["ai_message"]
+    audio_path = tts_client.text_to_speech(ai_message)
+    
+    # Add audio info to response
+    if audio_path:
+        audio_filename = os.path.basename(audio_path)
+        chat_response["audio_path"] = audio_path
+        chat_response["audio_url"] = f"/audio/{audio_filename}"
+    
+    return chat_response
+
+
+@app.get("/tts/health")
+async def tts_health():
+    """Check TTS microservice health"""
+    is_healthy = tts_client.health_check()
+    return {
+        "tts_service_healthy": is_healthy,
+        "tts_service_url": tts_client.base_url
+    }
 

@@ -16,12 +16,12 @@ def test_routing_fixes():
     backend_url = "http://localhost:9001"  # Backend container port
     test_results = []
     
-    # Test 1: Root redirect to /intelligent-triage/
+    # Test 1: Root redirect to /intelligent-triage
     print("1. Testing root redirect...")
     try:
         response = requests.get(f"{base_url}/", allow_redirects=False, timeout=5)
-        if response.status_code == 301 and "/intelligent-triage/" in response.headers.get('Location', ''):
-            print("✅ Root redirects to /intelligent-triage/")
+        if response.status_code == 301 and "/intelligent-triage" in response.headers.get('Location', ''):
+            print("✅ Root redirects to /intelligent-triage")
             test_results.append(("Root redirect", True))
         else:
             print(f"❌ Root redirect failed: {response.status_code}")
@@ -30,26 +30,26 @@ def test_routing_fixes():
         print(f"❌ Root redirect error: {e}")
         test_results.append(("Root redirect", False))
     
-    # Test 2: /intelligent-triage redirect to /intelligent-triage/
-    print("\n2. Testing /intelligent-triage redirect...")
+    # Test 2: /intelligent-triage should serve the app directly
+    print("\n2. Testing /intelligent-triage direct access...")
     try:
-        response = requests.get(f"{base_url}/intelligent-triage", allow_redirects=False, timeout=5)
-        if response.status_code == 301 and "/intelligent-triage/" in response.headers.get('Location', ''):
-            print("✅ /intelligent-triage redirects to /intelligent-triage/")
-            test_results.append(("/intelligent-triage redirect", True))
+        response = requests.get(f"{base_url}/intelligent-triage", timeout=10)
+        if response.status_code == 200:
+            print("✅ /intelligent-triage serves the app directly")
+            test_results.append(("/intelligent-triage direct access", True))
         else:
-            print(f"❌ /intelligent-triage redirect failed: {response.status_code}")
-            test_results.append(("/intelligent-triage redirect", False))
+            print(f"❌ /intelligent-triage not accessible: {response.status_code}")
+            test_results.append(("/intelligent-triage direct access", False))
     except Exception as e:
-        print(f"❌ /intelligent-triage redirect error: {e}")
-        test_results.append(("/intelligent-triage redirect", False))
+        print(f"❌ /intelligent-triage direct access error: {e}")
+        test_results.append(("/intelligent-triage direct access", False))
     
-    # Test 3: /intelligent-triage/backend redirect to /intelligent-triage/
+    # Test 3: /intelligent-triage/backend redirect to /intelligent-triage
     print("\n3. Testing /intelligent-triage/backend redirect...")
     try:
         response = requests.get(f"{base_url}/intelligent-triage/backend", allow_redirects=False, timeout=5)
-        if response.status_code == 301 and "/intelligent-triage/" in response.headers.get('Location', ''):
-            print("✅ /intelligent-triage/backend redirects to /intelligent-triage/")
+        if response.status_code == 301 and "/intelligent-triage" in response.headers.get('Location', ''):
+            print("✅ /intelligent-triage/backend redirects to /intelligent-triage")
             test_results.append(("/intelligent-triage/backend redirect", True))
         else:
             print(f"❌ /intelligent-triage/backend redirect failed: {response.status_code}")

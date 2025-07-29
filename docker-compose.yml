@@ -20,5 +20,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8010:80"
+    environment:
+      - NEXT_PUBLIC_BACKEND_URL=http://106.201.228.100:9001
+      - NEXT_PUBLIC_API_BASE_PATH=/intelligent-triage
     depends_on:
       - backend 

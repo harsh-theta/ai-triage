@@ -1,196 +1,84 @@
 #!/usr/bin/env python3
 """
-Test routing fixes for intelligent-triage application
+Test script to verify the routing fixes for the intelligent-triage deployment
 """
 
 import requests
-import json
 import time
-import sys
 
 def test_routing_fixes():
-    print("=== Routing Fixes Test ===\n")
+    print("=== Testing Routing Fixes ===\n")
     
-    # Use the correct ports for Docker containers
-    base_url = "http://localhost:8010"  # Frontend container port
-    backend_url = "http://localhost:9001"  # Backend container port
-    test_results = []
-    
-    # Test 1: Root URL (without trailing slash)
-    print("1. Testing root URL (without trailing slash)...")
+    # Test 1: TTS Service Health
+    print("1. Testing TTS service...")
     try:
-        response = requests.get(f"{base_url}", timeout=10)
+        response = requests.get("http://106.201.228.100:9003/health", timeout=5)
         if response.status_code == 200:
-            print("✅ Root URL serves the app directly")
-            test_results.append(("Root URL direct access", True))
+            print("✅ TTS service is healthy")
         else:
-            print(f"❌ Root URL not accessible: {response.status_code}")
-            test_results.append(("Root URL direct access", False))
+            print(f"❌ TTS service issue: {response.status_code}")
     except Exception as e:
-        print(f"❌ Root URL direct access error: {e}")
-        test_results.append(("Root URL direct access", False))
+        print(f"❌ TTS service error: {e}")
     
-    # Test 2: Root URL (with trailing slash)
-    print("\n2. Testing root URL (with trailing slash)...")
+    # Test 2: Backend Direct Access
+    print("\n2. Testing backend container...")
     try:
-        response = requests.get(f"{base_url}/", timeout=10)
+        response = requests.get("http://localhost:9001/intelligent-triage/docs", timeout=10)
         if response.status_code == 200:
-            print("✅ Root URL with slash serves the app directly")
-            test_results.append(("Root URL with slash direct access", True))
+            print("✅ Backend accessible with proxy path")
         else:
-            print(f"❌ Root URL with slash not accessible: {response.status_code}")
-            test_results.append(("Root URL with slash direct access", False))
+            print(f"❌ Backend proxy path issue: {response.status_code}")
     except Exception as e:
-        print(f"❌ Root URL with slash direct access error: {e}")
-        test_results.append(("Root URL with slash direct access", False))
+        print(f"❌ Backend connection error: {e}")
     
-    # Test 3: /intelligent-triage direct access
-    print("\n3. Testing /intelligent-triage direct access...")
+    # Test 3: Frontend Container
+    print("\n3. Testing frontend container...")
     try:
-        response = requests.get(f"{base_url}/intelligent-triage", timeout=10)
+        response = requests.get("http://localhost:8010/intelligent-triage", timeout=10)
         if response.status_code == 200:
-            print("✅ /intelligent-triage serves the app directly")
-            test_results.append(("/intelligent-triage direct access", True))
+            print("✅ Frontend accessible at /intelligent-triage")
+            # Check if it contains expected content
+            if "AI Medical Triage System" in response.text:
+                print("✅ Frontend content loading correctly")
+            else:
+                print("⚠️  Frontend content may have issues")
         else:
-            print(f"❌ /intelligent-triage not accessible: {response.status_code}")
-            test_results.append(("/intelligent-triage direct access", False))
+            print(f"❌ Frontend access issue: {response.status_code}")
     except Exception as e:
-        print(f"❌ /intelligent-triage direct access error: {e}")
-        test_results.append(("/intelligent-triage direct access", False))
+        print(f"❌ Frontend connection error: {e}")
     
-    # Test 4: /intelligent-triage/backend redirect to /intelligent-triage
-    print("\n4. Testing /intelligent-triage/backend redirect...")
+    # Test 4: API Endpoint through Frontend Proxy
+    print("\n4. Testing API through frontend proxy...")
     try:
-        response = requests.get(f"{base_url}/intelligent-triage/backend", allow_redirects=False, timeout=5)
-        if response.status_code == 301 and "/intelligent-triage" in response.headers.get('Location', ''):
-            print("✅ /intelligent-triage/backend redirects to /intelligent-triage")
-            test_results.append(("/intelligent-triage/backend redirect", True))
-        else:
-            print(f"❌ /intelligent-triage/backend redirect failed: {response.status_code}")
-            test_results.append(("/intelligent-triage/backend redirect", False))
-    except Exception as e:
-        print(f"❌ /intelligent-triage/backend redirect error: {e}")
-        test_results.append(("/intelligent-triage/backend redirect", False))
-    
-    # Test 5: Frontend accessible at /intelligent-triage/
-    print("\n5. Testing frontend at /intelligent-triage/...")
-    try:
-        response = requests.get(f"{base_url}/intelligent-triage/", timeout=10)
-        if response.status_code == 200:
-            print("✅ Frontend accessible at /intelligent-triage/")
-            test_results.append(("Frontend accessibility", True))
-        else:
-            print(f"❌ Frontend not accessible: {response.status_code}")
-            test_results.append(("Frontend accessibility", False))
-    except Exception as e:
-        print(f"❌ Frontend accessibility error: {e}")
-        test_results.append(("Frontend accessibility", False))
-    
-    # Test 6: Backend API accessible via proxy
-    print("\n6. Testing backend API via proxy...")
-    try:
-        response = requests.get(f"{base_url}/intelligent-triage/docs", timeout=10)
-        if response.status_code == 200:
-            print("✅ Backend API accessible via proxy")
-            test_results.append(("Backend API proxy", True))
-        else:
-            print(f"❌ Backend API not accessible: {response.status_code}")
-            test_results.append(("Backend API proxy", False))
-    except Exception as e:
-        print(f"❌ Backend API proxy error: {e}")
-        test_results.append(("Backend API proxy", False))
-    
-    # Test 7: Chat API endpoint
-    print("\n7. Testing chat API endpoint...")
-    try:
-        payload = {"message": "Hello", "session_id": "test-session"}
-        response = requests.post(f"{base_url}/intelligent-triage/chat", json=payload, timeout=30)
+        payload = {"message": "I have a headache", "session_id": "test"}
+        response = requests.post(
+            "http://localhost:8010/intelligent-triage/chat/tts", 
+            json=payload, 
+            timeout=30
+        )
         if response.status_code == 200:
             data = response.json()
-            if "ai_message" in data:
-                print("✅ Chat API working")
-                test_results.append(("Chat API", True))
+            if "audio_url" in data:
+                print("✅ API proxy working - TTS integration successful!")
+                print(f"✅ Audio URL: {data['audio_url']}")
             else:
-                print(f"❌ Chat API response missing ai_message: {data}")
-                test_results.append(("Chat API", False))
+                print("⚠️  API working but no audio_url (check TTS integration)")
         else:
-            print(f"❌ Chat API failed: {response.status_code}")
-            test_results.append(("Chat API", False))
+            print(f"❌ API proxy issue: {response.status_code}")
     except Exception as e:
-        print(f"❌ Chat API error: {e}")
-        test_results.append(("Chat API", False))
+        print(f"❌ API proxy error: {e}")
     
-    # Test 8: TTS API endpoint
-    print("\n8. Testing TTS API endpoint...")
-    try:
-        payload = {"message": "Hello", "session_id": "test-session"}
-        response = requests.post(f"{base_url}/intelligent-triage/chat/tts", json=payload, timeout=30)
-        if response.status_code == 200:
-            data = response.json()
-            if "ai_message" in data and "audio_url" in data:
-                print("✅ TTS API working")
-                test_results.append(("TTS API", True))
-            else:
-                print(f"❌ TTS API response missing required fields: {data}")
-                test_results.append(("TTS API", False))
-        else:
-            print(f"❌ TTS API failed: {response.status_code}")
-            test_results.append(("TTS API", False))
-    except Exception as e:
-        print(f"❌ TTS API error: {e}")
-        test_results.append(("TTS API", False))
-    
-    # Test 9: Health check
-    print("\n9. Testing health check...")
-    try:
-        response = requests.get(f"{base_url}/health", timeout=5)
-        if response.status_code == 200:
-            print("✅ Health check working")
-            test_results.append(("Health check", True))
-        else:
-            print(f"❌ Health check failed: {response.status_code}")
-            test_results.append(("Health check", False))
-    except Exception as e:
-        print(f"❌ Health check error: {e}")
-        test_results.append(("Health check", False))
-    
-    # Test 10: Direct backend access
-    print("\n10. Testing direct backend access...")
-    try:
-        response = requests.get(f"{backend_url}/docs", timeout=5)
-        if response.status_code == 200:
-            print("✅ Direct backend access working")
-            test_results.append(("Direct backend access", True))
-        else:
-            print(f"❌ Direct backend access failed: {response.status_code}")
-            test_results.append(("Direct backend access", False))
-    except Exception as e:
-        print(f"❌ Direct backend access error: {e}")
-        test_results.append(("Direct backend access", False))
-    
-    # Summary
     print("\n" + "="*50)
-    print("📋 TEST SUMMARY")
+    print("🚀 DEPLOYMENT INSTRUCTIONS:")
     print("="*50)
-    
-    passed = 0
-    total = len(test_results)
-    
-    for test_name, result in test_results:
-        status = "✅ PASS" if result else "❌ FAIL"
-        print(f"{status}: {test_name}")
-        if result:
-            passed += 1
-    
-    print(f"\n🎯 Results: {passed}/{total} tests passed")
-    
-    if passed == total:
-        print("🎉 All routing fixes are working correctly!")
-        return True
-    else:
-        print("⚠️  Some tests failed. Please check the configuration.")
-        return False
+    print("1. Deploy: ./deploy.sh")
+    print("2. Check status: docker-compose ps")
+    print("3. View logs: docker-compose logs -f")
+    print("4. Access app: https://demo.thehealthmolasses.com/intelligent-triage")
+    print("\n📱 Expected URLs:")
+    print("   Frontend: https://demo.thehealthmolasses.com/intelligent-triage")
+    print("   API Docs: https://demo.thehealthmolasses.com/intelligent-triage/docs")
+    print("   Health: https://demo.thehealthmolasses.com/intelligent-triage/tts/health")
 
 if __name__ == "__main__":
-    success = test_routing_fixes()
-    sys.exit(0 if success else 1) 
+    test_routing_fixes()

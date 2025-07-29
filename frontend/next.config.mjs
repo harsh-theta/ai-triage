@@ -9,17 +9,13 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // Configure for proxy deployment with /intelligent-triage/ base path
+  // Configure for proxy deployment - nginx handles the routing
   basePath: '/intelligent-triage',
   assetPrefix: '/intelligent-triage',
   trailingSlash: false,
   // Enable static export for nginx deployment
   output: 'export',
   distDir: 'out',
-  // Ensure proper handling of static assets
-  experimental: {
-    appDir: true,
-  },
   // Handle base path for static assets
   webpack: (config, { isServer }) => {
     if (!isServer) {

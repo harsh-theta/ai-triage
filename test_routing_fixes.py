@@ -16,22 +16,36 @@ def test_routing_fixes():
     backend_url = "http://localhost:9001"  # Backend container port
     test_results = []
     
-    # Test 1: Root redirect to /intelligent-triage
-    print("1. Testing root redirect...")
+    # Test 1: Root URL (without trailing slash)
+    print("1. Testing root URL (without trailing slash)...")
     try:
-        response = requests.get(f"{base_url}/", allow_redirects=False, timeout=5)
-        if response.status_code == 301 and "/intelligent-triage" in response.headers.get('Location', ''):
-            print("✅ Root redirects to /intelligent-triage")
-            test_results.append(("Root redirect", True))
+        response = requests.get(f"{base_url}", timeout=10)
+        if response.status_code == 200:
+            print("✅ Root URL serves the app directly")
+            test_results.append(("Root URL direct access", True))
         else:
-            print(f"❌ Root redirect failed: {response.status_code}")
-            test_results.append(("Root redirect", False))
+            print(f"❌ Root URL not accessible: {response.status_code}")
+            test_results.append(("Root URL direct access", False))
     except Exception as e:
-        print(f"❌ Root redirect error: {e}")
-        test_results.append(("Root redirect", False))
+        print(f"❌ Root URL direct access error: {e}")
+        test_results.append(("Root URL direct access", False))
     
-    # Test 2: /intelligent-triage should serve the app directly
-    print("\n2. Testing /intelligent-triage direct access...")
+    # Test 2: Root URL (with trailing slash)
+    print("\n2. Testing root URL (with trailing slash)...")
+    try:
+        response = requests.get(f"{base_url}/", timeout=10)
+        if response.status_code == 200:
+            print("✅ Root URL with slash serves the app directly")
+            test_results.append(("Root URL with slash direct access", True))
+        else:
+            print(f"❌ Root URL with slash not accessible: {response.status_code}")
+            test_results.append(("Root URL with slash direct access", False))
+    except Exception as e:
+        print(f"❌ Root URL with slash direct access error: {e}")
+        test_results.append(("Root URL with slash direct access", False))
+    
+    # Test 3: /intelligent-triage direct access
+    print("\n3. Testing /intelligent-triage direct access...")
     try:
         response = requests.get(f"{base_url}/intelligent-triage", timeout=10)
         if response.status_code == 200:
@@ -44,8 +58,8 @@ def test_routing_fixes():
         print(f"❌ /intelligent-triage direct access error: {e}")
         test_results.append(("/intelligent-triage direct access", False))
     
-    # Test 3: /intelligent-triage/backend redirect to /intelligent-triage
-    print("\n3. Testing /intelligent-triage/backend redirect...")
+    # Test 4: /intelligent-triage/backend redirect to /intelligent-triage
+    print("\n4. Testing /intelligent-triage/backend redirect...")
     try:
         response = requests.get(f"{base_url}/intelligent-triage/backend", allow_redirects=False, timeout=5)
         if response.status_code == 301 and "/intelligent-triage" in response.headers.get('Location', ''):
@@ -58,8 +72,8 @@ def test_routing_fixes():
         print(f"❌ /intelligent-triage/backend redirect error: {e}")
         test_results.append(("/intelligent-triage/backend redirect", False))
     
-    # Test 4: Frontend accessible at /intelligent-triage/
-    print("\n4. Testing frontend at /intelligent-triage/...")
+    # Test 5: Frontend accessible at /intelligent-triage/
+    print("\n5. Testing frontend at /intelligent-triage/...")
     try:
         response = requests.get(f"{base_url}/intelligent-triage/", timeout=10)
         if response.status_code == 200:
@@ -72,8 +86,8 @@ def test_routing_fixes():
         print(f"❌ Frontend accessibility error: {e}")
         test_results.append(("Frontend accessibility", False))
     
-    # Test 5: Backend API accessible via proxy
-    print("\n5. Testing backend API via proxy...")
+    # Test 6: Backend API accessible via proxy
+    print("\n6. Testing backend API via proxy...")
     try:
         response = requests.get(f"{base_url}/intelligent-triage/docs", timeout=10)
         if response.status_code == 200:
@@ -86,8 +100,8 @@ def test_routing_fixes():
         print(f"❌ Backend API proxy error: {e}")
         test_results.append(("Backend API proxy", False))
     
-    # Test 6: Chat API endpoint
-    print("\n6. Testing chat API endpoint...")
+    # Test 7: Chat API endpoint
+    print("\n7. Testing chat API endpoint...")
     try:
         payload = {"message": "Hello", "session_id": "test-session"}
         response = requests.post(f"{base_url}/intelligent-triage/chat", json=payload, timeout=30)
@@ -106,8 +120,8 @@ def test_routing_fixes():
         print(f"❌ Chat API error: {e}")
         test_results.append(("Chat API", False))
     
-    # Test 7: TTS API endpoint
-    print("\n7. Testing TTS API endpoint...")
+    # Test 8: TTS API endpoint
+    print("\n8. Testing TTS API endpoint...")
     try:
         payload = {"message": "Hello", "session_id": "test-session"}
         response = requests.post(f"{base_url}/intelligent-triage/chat/tts", json=payload, timeout=30)
@@ -126,8 +140,8 @@ def test_routing_fixes():
         print(f"❌ TTS API error: {e}")
         test_results.append(("TTS API", False))
     
-    # Test 8: Health check
-    print("\n8. Testing health check...")
+    # Test 9: Health check
+    print("\n9. Testing health check...")
     try:
         response = requests.get(f"{base_url}/health", timeout=5)
         if response.status_code == 200:
@@ -140,8 +154,8 @@ def test_routing_fixes():
         print(f"❌ Health check error: {e}")
         test_results.append(("Health check", False))
     
-    # Test 9: Direct backend access
-    print("\n9. Testing direct backend access...")
+    # Test 10: Direct backend access
+    print("\n10. Testing direct backend access...")
     try:
         response = requests.get(f"{backend_url}/docs", timeout=5)
         if response.status_code == 200:

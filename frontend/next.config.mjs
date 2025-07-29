@@ -16,6 +16,20 @@ const nextConfig = {
   // Enable static export for nginx deployment
   output: 'export',
   distDir: 'out',
+  // Ensure proper handling of static assets
+  experimental: {
+    appDir: true,
+  },
+  // Handle base path for static assets
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+      };
+    }
+    return config;
+  },
 }
 
 export default nextConfig

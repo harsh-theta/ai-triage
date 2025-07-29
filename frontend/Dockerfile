@@ -37,9 +37,6 @@ RUN mkdir -p /var/log/nginx && \
 # Expose port
 EXPOSE 80
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=5 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost/health || exit 1
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"] 

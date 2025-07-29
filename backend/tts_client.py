@@ -18,6 +18,8 @@ class TTSClient:
             base_url: Base URL of the TTS microservice (e.g., "http://localhost:9003")
         """
         self.base_url = base_url or os.getenv("TTS_SERVICE_URL")
+        self.proxy_domain = os.getenv("PROXY_DOMAIN", "https://demo.thetatechnolabs.com")
+        self.proxy_base_path = os.getenv("ROOT_PATH", "/intelligent-triage")
         
     def text_to_speech(self, text: str, voice: str = "female") -> Optional[str]:
         """
@@ -51,7 +53,20 @@ class TTSClient:
                 
                 if audio_url:
                     logger.info(f"TTS audio URL received: {audio_url}")
-                    return audio_url
+                    # Transform HTTP URL to HTTPS proxy URL
+                    # Example: http://106.201.228.100:9003/static/audio/file.wav
+                    # becomes: https://demo.thetatechnolabs.com/intelligent-triage/static/audio/file.wav
+                    if audio_url.startswith("http://106.201.228.100:9003/static/"):
+                        # Extract the path after /static/
+                        static_path = audio_url.replace("http://106.201.228.100:9003/static/", "")
+                        # Build the proxy URL
+                        proxy_url = f"{self.proxy_domain}{self.proxy_base_path}/static/{static_path}"
+                        logger.info(f"Transformed URL: {audio_url} -> {proxy_url}")
+                        return proxy_url
+                    else:
+                        # Return original URL if it doesn't match expected pattern
+                        logger.warning(f"Unexpected TTS URL format: {audio_url}")
+                        return audio_url
                 else:
                     logger.error(f"No audio_url in TTS response: {response_data}")
                     return None

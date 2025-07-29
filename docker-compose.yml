@@ -10,6 +10,7 @@ services:
     environment:
       - TTS_SERVICE_URL=http://106.201.228.100:9003
       - ROOT_PATH=/intelligent-triage
+      - PROXY_DOMAIN=https://demo.thetatechnolabs.com
     volumes:
       - ./backend/responses:/app/responses
       - ./backend/uploads:/app/uploads

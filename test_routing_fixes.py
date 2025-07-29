@@ -11,7 +11,9 @@ import sys
 def test_routing_fixes():
     print("=== Routing Fixes Test ===\n")
     
-    base_url = "http://localhost"
+    # Use the correct ports for Docker containers
+    base_url = "http://localhost:8010"  # Frontend container port
+    backend_url = "http://localhost:9001"  # Backend container port
     test_results = []
     
     # Test 1: Root redirect to /intelligent-triage/
@@ -137,6 +139,20 @@ def test_routing_fixes():
     except Exception as e:
         print(f"❌ Health check error: {e}")
         test_results.append(("Health check", False))
+    
+    # Test 9: Direct backend access
+    print("\n9. Testing direct backend access...")
+    try:
+        response = requests.get(f"{backend_url}/docs", timeout=5)
+        if response.status_code == 200:
+            print("✅ Direct backend access working")
+            test_results.append(("Direct backend access", True))
+        else:
+            print(f"❌ Direct backend access failed: {response.status_code}")
+            test_results.append(("Direct backend access", False))
+    except Exception as e:
+        print(f"❌ Direct backend access error: {e}")
+        test_results.append(("Direct backend access", False))
     
     # Summary
     print("\n" + "="*50)

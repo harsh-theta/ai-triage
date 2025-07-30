@@ -68,6 +68,79 @@ def extract_emr_fields(chat_history: List[Dict]) -> dict:
         return {}
 
 
+# Detect emergency symptoms and set emergency flag
+def detect_emergency_symptoms(emr_fields: dict, chat_history: List[Dict]) -> dict:
+    """
+    Analyze the chief complaint and symptoms to detect emergency conditions.
+    Automatically sets emergency_flag to True if serious symptoms are detected.
+    """
+    # Get all user messages to analyze symptoms
+    user_messages = [msg["content"].lower() for msg in chat_history if msg["role"] == "user"]
+    all_user_text = " ".join(user_messages)
+    
+    # Get chief complaint and associated symptoms
+    chief_complaint = (emr_fields.get("chief_complaint") or "").lower()
+    associated_symptoms = (emr_fields.get("associated_symptoms") or "").lower()
+    
+    # Combine all symptom text for analysis
+    symptom_text = f"{all_user_text} {chief_complaint} {associated_symptoms}".lower()
+    
+    # Define emergency symptom patterns
+    emergency_patterns = [
+        # Cardiac emergencies
+        "chest pain", "chest pressure", "chest tightness", "heart attack", "cardiac arrest",
+        "severe chest pain", "crushing chest pain", "radiating pain", "left arm pain",
+        
+        # Respiratory emergencies  
+        "shortness of breath", "difficulty breathing", "can't breathe", "cannot breathe",
+        "trouble breathing", "gasping", "choking", "severe asthma", "respiratory distress",
+        
+        # Neurological emergencies
+        "stroke", "severe headache", "worst headache", "sudden headache", "confusion",
+        "loss of consciousness", "unconscious", "seizure", "paralysis", "weakness on one side",
+        "slurred speech", "vision loss", "sudden vision", "dizziness with chest pain",
+        
+        # Severe bleeding/trauma
+        "severe bleeding", "heavy bleeding", "uncontrolled bleeding", "major trauma",
+        "head injury", "severe injury", "broken bone", "compound fracture",
+        
+        # Severe abdominal issues
+        "severe abdominal pain", "severe stomach pain", "appendicitis", "severe nausea",
+        "vomiting blood", "blood in vomit", "severe dehydration",
+        
+        # Allergic reactions
+        "anaphylaxis", "severe allergic reaction", "swelling throat", "throat closing",
+        "difficulty swallowing", "severe rash", "hives all over",
+        
+        # Other emergencies
+        "overdose", "poisoning", "suicide", "self harm", "severe depression",
+        "high fever", "fever over 103", "severe pain", "pain 9", "pain 10",
+        "emergency", "911", "hospital", "ambulance", "urgent care"
+    ]
+    
+    # Check for emergency patterns
+    emergency_detected = False
+    detected_symptoms = []
+    
+    for pattern in emergency_patterns:
+        if pattern in symptom_text:
+            emergency_detected = True
+            detected_symptoms.append(pattern)
+    
+    # Additional severity-based detection
+    severity = emr_fields.get("severity")
+    if severity and (isinstance(severity, (int, float)) and severity >= 8):
+        emergency_detected = True
+        detected_symptoms.append(f"high severity score: {severity}")
+    
+    # Update EMR fields if emergency detected
+    if emergency_detected:
+        emr_fields["emergency_flag"] = True
+        print(f"[detect_emergency_symptoms] Emergency detected! Symptoms: {detected_symptoms}")
+    
+    return emr_fields
+
+
 # Summarize EMR dict
 def get_emr_summary(emr_fields: dict) -> str:
     prompt = summary_prompt(emr_fields)
@@ -138,6 +211,10 @@ def triage_conversation(user_input: str, session_state: Dict = None) -> Dict:
 
     # Extract EMR fields so far
     emr_fields = extract_emr_fields(chat_history)
+    
+    # Check for emergency symptoms and automatically set emergency flag
+    emr_fields = detect_emergency_symptoms(emr_fields, chat_history)
+    
     missing = get_missing_fields(emr_fields)
 
     # Check if all questions have been answered (even if some fields are empty)
@@ -146,8 +223,14 @@ def triage_conversation(user_input: str, session_state: Dict = None) -> Dict:
     # End if emergency detected, too many turns, or all questions answered
     if emr_fields.get("emergency_flag") or turn >= 8 or questions_complete:
         session_state["is_complete"] = True
-        summary = get_emr_summary(emr_fields)
-        bot_reply = summary if summary else "Thank you, I have gathered all the necessary information for your triage assessment."
+        
+        # Special handling for emergency cases
+        if emr_fields.get("emergency_flag"):
+            bot_reply = "⚠️ EMERGENCY DETECTED: Based on your symptoms, this appears to be a medical emergency that requires immediate attention. I am immediately transferring your case to a human medical professional. Please call 911 or go to the nearest emergency room right away. Do not delay seeking medical care."
+        else:
+            summary = get_emr_summary(emr_fields)
+            bot_reply = summary if summary else "Thank you, I have gathered all the necessary information for your triage assessment."
+        
         chat_history.append({"role": "assistant", "content": bot_reply})
         return {
             "emr_fields": emr_fields,

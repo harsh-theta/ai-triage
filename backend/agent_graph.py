@@ -45,12 +45,27 @@ def extract_emr_fields(chat_history: List[Dict]) -> dict:
 
         Fields: {REQUIRED_FIELDS}
 
-        For the 'severity' field, only accept values between 1 and 10. If the user gives a value outside this range, set severity to null and ask the user to provide a value between 1 and 10 in your next question.
+        CRITICAL EMERGENCY DETECTION INSTRUCTIONS:
+        - If you detect ANY emergency symptoms, you MUST set "emergency_flag" to true immediately
+        - Emergency symptoms include but are not limited to:
+          * Chest pain, chest pressure, heart attack symptoms
+          * Shortness of breath, difficulty breathing, can't breathe
+          * Stroke symptoms, severe headache, loss of consciousness
+          * Severe bleeding, major trauma, head injury
+          * Severe abdominal pain, vomiting blood
+          * Allergic reactions, throat swelling, anaphylaxis
+          * Overdose, poisoning, suicidal thoughts
+          * Any pain rated 8/10 or higher
+          * Any symptoms requiring immediate medical attention
+        - When emergency_flag is true, the case will be immediately transferred to human medical professionals
+        - Patient safety is the absolute priority - err on the side of caution
+
+        For the 'severity' field, only accept values between 1 and 10. If the user gives a value outside this range, set severity to null.
 
         Conversation:
         {history_str}
 
-        Return a valid JSON object with the fields as keys.
+        Return a valid JSON object with the fields as keys. Remember: SET emergency_flag to true if ANY emergency symptoms are detected.
     """
 
     try:

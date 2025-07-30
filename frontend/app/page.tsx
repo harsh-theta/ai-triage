@@ -70,10 +70,9 @@ export default function TriagePage() {
     is_loading: false,
   })
   const [voiceMode, setVoiceMode] = useState(false)
-  const [forceShowFinal, setForceShowFinal] = useState(false)
 
   const sendMessage = async (content: string) => {
-    if (state.status === "emergency_detected" || state.status === "error" || state.is_loading) {
+    if (state.status === "emergency_detected" || state.status === "error" || state.status === "complete" || state.is_loading) {
       return
     }
 
@@ -139,12 +138,7 @@ export default function TriagePage() {
         ...prev,
         messages: [...prev.messages, aiMessage],
         emr_data,
-        status:
-          data.status ||
-          (aiMessage.content &&
-            /summary|in summary|all the information|this concludes|goodbye|bye|final emr/i.test(aiMessage.content)
-              ? "complete"
-              : prev.status),
+        status: data.status || prev.status,
         current_protocol: data.protocol || prev.current_protocol,
         is_loading: false,
         error_message: undefined,
@@ -211,7 +205,7 @@ export default function TriagePage() {
                 <ChatInterface
                   messages={state.messages}
                   onSendMessage={sendMessage}
-                  disabled={state.status === "emergency_detected" || state.status === "error"}
+                  disabled={state.status === "emergency_detected" || state.status === "error" || state.status === "complete"}
                   isLoading={state.is_loading}
                   voiceMode={voiceMode}
                 />
@@ -232,8 +226,8 @@ export default function TriagePage() {
           <ErrorDisplay message={state.error_message || "An error occurred"} onRetry={resetTriage} />
         )}
 
-        {/* Final EMR Dictionary (Raw) */}
-        {(state.status === "complete" || forceShowFinal) && (
+        {/* Final EMR Dictionary (Raw) - Automatically shown when complete */}
+        {state.status === "complete" && (
           <div className="max-w-3xl mx-auto mt-8">
             <Card className="p-4">
               <h2 className="text-xl font-bold mb-2">Final EMR Dictionary</h2>
@@ -242,16 +236,6 @@ export default function TriagePage() {
               </pre>
             </Card>
           </div>
-        )}
-        {/* Show Final EMR button if not marked complete but last message looks like a summary */}
-        {state.status !== "complete" && !forceShowFinal &&
-          state.messages.length > 0 &&
-          /summary|in summary|all the information|this concludes|goodbye|bye|final emr/i.test(state.messages[state.messages.length - 1].content) && (
-            <div className="max-w-3xl mx-auto mt-4 flex justify-center">
-              <Button onClick={() => setForceShowFinal(true)} variant="secondary">
-                Show Final EMR
-              </Button>
-            </div>
         )}
       </div>
 

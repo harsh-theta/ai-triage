@@ -79,8 +79,20 @@ def detect_emergency_symptoms(emr_fields: dict, chat_history: List[Dict]) -> dic
     all_user_text = " ".join(user_messages)
     
     # Get chief complaint and associated symptoms
-    chief_complaint = (emr_fields.get("chief_complaint") or "").lower()
-    associated_symptoms = (emr_fields.get("associated_symptoms") or "").lower()
+    chief_complaint = (emr_fields.get("chief_complaint") or "")
+    if isinstance(chief_complaint, str):
+        chief_complaint = chief_complaint.lower()
+    else:
+        chief_complaint = ""
+    
+    # Handle associated_symptoms which can be string or list
+    associated_symptoms = emr_fields.get("associated_symptoms") or ""
+    if isinstance(associated_symptoms, list):
+        associated_symptoms = " ".join(str(item) for item in associated_symptoms if item).lower()
+    elif isinstance(associated_symptoms, str):
+        associated_symptoms = associated_symptoms.lower()
+    else:
+        associated_symptoms = ""
     
     # Combine all symptom text for analysis
     symptom_text = f"{all_user_text} {chief_complaint} {associated_symptoms}".lower()

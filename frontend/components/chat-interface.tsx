@@ -113,6 +113,12 @@ export function ChatInterface({ messages, onSendMessage, disabled = false, isLoa
         const transcript = event.results[0][0].transcript
         setInput(transcript)
         setIsListening(false)
+        
+        // In voice mode, automatically send the message after recognition
+        if (voiceMode && transcript.trim()) {
+          onSendMessage(transcript.trim())
+          setInput("")
+        }
       }
       recognition.onerror = () => {
         setIsListening(false)
@@ -126,6 +132,12 @@ export function ChatInterface({ messages, onSendMessage, disabled = false, isLoa
     } else {
       recognitionRef.current?.stop()
       setIsListening(false)
+      
+      // In voice mode, if there's text in input, send it when stopping manually
+      if (voiceMode && input.trim()) {
+        onSendMessage(input.trim())
+        setInput("")
+      }
     }
   }
 
@@ -158,45 +170,66 @@ export function ChatInterface({ messages, onSendMessage, disabled = false, isLoa
 
       {/* Input */}
       <div className="p-4 border-t">
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <Input
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder={disabled ? "Chat disabled" : "Describe your symptoms..."}
-            disabled={disabled || isLoading}
-            className="flex-1"
-          />
-         {voiceMode && (
-           <Button
-             type="button"
-             onClick={handleMicClick}
-             disabled={disabled || isLoading}
-             variant={isListening ? "secondary" : "outline"}
-             size="icon"
-             aria-label={isListening ? "Stop listening" : "Start listening"}
-           >
-             <svg
-               xmlns="http://www.w3.org/2000/svg"
-               fill={isListening ? "#2563eb" : "none"}
-               viewBox="0 0 24 24"
-               strokeWidth={1.5}
-               stroke="currentColor"
-               className="h-5 w-5"
-             >
-               <path
-                 strokeLinecap="round"
-                 strokeLinejoin="round"
-                 d="M12 18.75v1.5m0 0h3.75m-3.75 0H8.25m7.5-7.5a3.75 3.75 0 10-7.5 0v2.25a3.75 3.75 0 007.5 0V12z"
-               />
-             </svg>
-           </Button>
-         )}
-          <Button type="submit" disabled={!input.trim() || disabled || isLoading} size="icon">
-            <Send className="h-4 w-4" />
-          </Button>
-        </form>
+        {voiceMode ? (
+          // Voice Mode: Only show mic button with status
+          <div className="flex flex-col items-center gap-3">
+            {isListening && (
+              <div className="text-sm text-blue-600 font-medium animate-pulse">
+                🎤 Listening... Click to stop and send
+              </div>
+            )}
+            {!isListening && input.trim() && (
+              <div className="text-sm text-gray-600 bg-gray-100 rounded-lg px-3 py-2 max-w-full overflow-hidden">
+                "{input}"
+              </div>
+            )}
+            <Button
+              type="button"
+              onClick={handleMicClick}
+              disabled={disabled || isLoading}
+              variant={isListening ? "default" : "outline"}
+              size="lg"
+              className={cn(
+                "w-20 h-20 rounded-full transition-all duration-200 shadow-lg",
+                isListening 
+                  ? "bg-red-500 hover:bg-red-600 animate-pulse shadow-red-200" 
+                  : "hover:scale-105 shadow-blue-100 border-2 border-blue-200"
+              )}
+              aria-label={isListening ? "Stop listening and send" : "Start listening"}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill={isListening ? "white" : "currentColor"}
+                className="h-16 w-16"
+              >
+                <path d="M8.25 4.5a3.75 3.75 0 1 1 7.5 0v4.5a3.75 3.75 0 1 1-7.5 0V4.5Z" />
+                <path d="M6 10.5a.75.75 0 0 1 .75.75v1.5a5.25 5.25 0 1 0 10.5 0v-1.5a.75.75 0 0 1 1.5 0v1.5A6.75 6.75 0 0 1 12.75 20v1.25h3a.75.75 0 0 1 0 1.5h-7.5a.75.75 0 0 1 0-1.5h3V20A6.75 6.75 0 0 1 5.25 12.75v-1.5A.75.75 0 0 1 6 10.5Z" />
+              </svg>
+            </Button>
+            {!isListening && (
+              <div className="text-xs text-gray-500 text-center">
+                Click to start speaking
+              </div>
+            )}
+          </div>
+        ) : (
+          // Text Mode: Show input field and send button
+          <form onSubmit={handleSubmit} className="flex gap-2">
+            <Input
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder={disabled ? "Chat disabled" : "Describe your symptoms..."}
+              disabled={disabled || isLoading}
+              className="flex-1"
+            />
+            <Button type="submit" disabled={!input.trim() || disabled || isLoading} size="icon">
+              <Send className="h-4 w-4" />
+            </Button>
+          </form>
+        )}
       </div>
     </div>
   )

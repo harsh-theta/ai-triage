@@ -190,7 +190,7 @@ export function ChatInterface({ messages, onSendMessage, disabled = false, isLoa
               variant={isListening ? "default" : "outline"}
               size="lg"
               className={cn(
-                "w-20 h-20 rounded-full transition-all duration-200 shadow-lg",
+                "w-28 h-28 rounded-full transition-all duration-200 shadow-lg",
                 isListening 
                   ? "bg-red-500 hover:bg-red-600 animate-pulse shadow-red-200" 
                   : "hover:scale-105 shadow-blue-100 border-2 border-blue-200"
@@ -201,7 +201,7 @@ export function ChatInterface({ messages, onSendMessage, disabled = false, isLoa
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
                 fill={isListening ? "white" : "currentColor"}
-                className="h-10 w-10"
+                className="h-14 w-14"
               >
                 <path d="M8.25 4.5a3.75 3.75 0 1 1 7.5 0v4.5a3.75 3.75 0 1 1-7.5 0V4.5Z" />
                 <path d="M6 10.5a.75.75 0 0 1 .75.75v1.5a5.25 5.25 0 1 0 10.5 0v-1.5a.75.75 0 0 1 1.5 0v1.5A6.75 6.75 0 0 1 12.75 20v1.25h3a.75.75 0 0 1 0 1.5h-7.5a.75.75 0 0 1 0-1.5h3V20A6.75 6.75 0 0 1 5.25 12.75v-1.5A.75.75 0 0 1 6 10.5Z" />

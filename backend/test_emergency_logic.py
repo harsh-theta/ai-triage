@@ -114,6 +114,21 @@ def test_emergency_detection():
     print(f"Emergency detected: {result.get('emergency_flag', False)}")
     print(f"Expected: False (high severity alone should not trigger emergency)")
     
+    # Test Case 2b: Severity 8 headache should also NOT trigger
+    print("\nTest 2b: Severity 8/10 headache should NOT trigger emergency")
+    emr_fields = {
+        "chief_complaint": "headache",
+        "severity": 8,  # High severity but not emergency symptom
+        "duration": "2 hours"
+    }
+    chat_history = [
+        {"role": "user", "content": "I have a headache that's an 8 out of 10 on the pain scale"}
+    ]
+    result = detect_emergency_symptoms_test(emr_fields, chat_history)
+    print(f"EMR: {emr_fields}")
+    print(f"Emergency detected: {result.get('emergency_flag', False)}")
+    print(f"Expected: False (severity 8 headache should not trigger emergency)")
+    
     # Test Case 3: Emergency symptom (difficulty breathing) should trigger
     print("\nTest 3: Emergency symptom (difficulty breathing)")
     emr_fields = {

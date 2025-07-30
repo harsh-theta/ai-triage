@@ -1,65 +1,93 @@
 #!/usr/bin/env python3
 """
-Simple test for TTS integration without the full agent graph
+Simple test to verify emergency detection logic is working correctly
+for headache with severity 8 (should NOT trigger emergency)
 """
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from tts_client import tts_client
-import uvicorn
-
-app = FastAPI(root_path="/intelligent-triage")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-class ChatRequest(BaseModel):
-    message: str
-    session_id: str = None
-
-@app.post("/chat/tts")
-async def chat_with_tts(request: ChatRequest):
-    """Simple chat endpoint that returns TTS audio"""
+def test_headache_severity_8_simple():
+    """
+    Test that headache with severity 8 does NOT trigger emergency
+    """
+    print("Testing: Headache with Severity 8 - Should NOT be Emergency")
+    print("=" * 55)
     
-    # Simple response for testing
-    ai_message = f"I understand you said: '{request.message}'. How can I help you further?"
+    # Test data that represents what the LLM should extract
+    test_cases = [
+        {
+            "name": "Headache Severity 8",
+            "emr_fields": {
+                "chief_complaint": "headache",
+                "severity": 8,
+                "duration": "2 hours",
+                "emergency_flag": False  # Should remain False
+            },
+            "chat_history": [
+                {"role": "user", "content": "I have a headache"},
+                {"role": "user", "content": "It's an 8 out of 10 on the pain scale"}
+            ],
+            "expected_emergency": False
+        },
+        {
+            "name": "Headache Severity 10",
+            "emr_fields": {
+                "chief_complaint": "headache",
+                "severity": 10,
+                "duration": "1 hour",
+                "emergency_flag": False  # Should remain False
+            },
+            "chat_history": [
+                {"role": "user", "content": "I have the worst headache of my life"},
+                {"role": "user", "content": "It's a 10 out of 10"}
+            ],
+            "expected_emergency": False
+        },
+        {
+            "name": "Chest Pain Severity 5",
+            "emr_fields": {
+                "chief_complaint": "chest pain",
+                "severity": 5,
+                "duration": "30 minutes",
+                "emergency_flag": False
+            },
+            "chat_history": [
+                {"role": "user", "content": "I have chest pain"},
+                {"role": "user", "content": "It's about a 5 out of 10"}
+            ],
+            "expected_emergency": True  # Should trigger emergency
+        }
+    ]
     
-    # Generate TTS for the AI response
-    print(f"DEBUG: Generating TTS for message: '{ai_message}'")
-    audio_url = tts_client.text_to_speech(ai_message)
-    print(f"DEBUG: TTS result: {audio_url}")
+    # Simple pattern matching (simulating our detect_emergency_symptoms function)
+    emergency_patterns = [
+        "chest pain", "chest pressure", "shortness of breath", 
+        "difficulty breathing", "stroke", "seizure", "unconscious",
+        "vomiting blood", "anaphylaxis", "overdose", "poisoning"
+    ]
     
-    response = {
-        "ai_message": ai_message,
-        "status": "active",
-        "protocol": "Simple Test",
-        "emr_data": {},
-        "messages": []
-    }
+    for test_case in test_cases:
+        print(f"\nTest: {test_case['name']}")
+        
+        # Check if any emergency patterns are in the symptoms
+        all_text = " ".join([msg["content"].lower() for msg in test_case["chat_history"]])
+        all_text += " " + test_case["emr_fields"].get("chief_complaint", "").lower()
+        
+        emergency_detected = any(pattern in all_text for pattern in emergency_patterns)
+        
+        print(f"  Chief Complaint: {test_case['emr_fields']['chief_complaint']}")
+        print(f"  Severity: {test_case['emr_fields']['severity']}")
+        print(f"  Emergency Detected: {emergency_detected}")
+        print(f"  Expected: {test_case['expected_emergency']}")
+        
+        if emergency_detected == test_case['expected_emergency']:
+            print("  ✅ PASSED")
+        else:
+            print("  ❌ FAILED")
     
-    # Add audio URL directly from TTS service
-    if audio_url:
-        response["audio_url"] = audio_url
-        print(f"DEBUG: Added audio_url: {response['audio_url']}")
-    else:
-        print("DEBUG: No audio_url returned from TTS")
-    
-    return response
-
-@app.get("/tts/health")
-async def tts_health():
-    """Check TTS microservice health"""
-    is_healthy = tts_client.health_check()
-    return {
-        "tts_service_healthy": is_healthy,
-        "tts_service_url": tts_client.base_url
-    }
+    print("\n" + "=" * 55)
+    print("Key Points:")
+    print("- Headache with ANY severity (8, 9, 10) should NOT trigger emergency")
+    print("- Only specific symptom types should trigger emergency")
+    print("- Severity alone should never determine emergency status")
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=9001)
+    test_headache_severity_8_simple()

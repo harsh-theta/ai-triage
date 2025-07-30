@@ -22,6 +22,7 @@ export function ChatInterface({ messages, onSendMessage, disabled = false, isLoa
   const [input, setInput] = useState("")
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const [isListening, setIsListening] = useState(false)
   const recognitionRef = useRef<any>(null)
 
@@ -29,6 +30,26 @@ export function ChatInterface({ messages, onSendMessage, disabled = false, isLoa
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
+
+  // Initial focus on mount
+  useEffect(() => {
+    if (!disabled && !isLoading) {
+      inputRef.current?.focus()
+    }
+  }, [])
+
+  // Auto-focus input after bot responds
+  useEffect(() => {
+    if (messages.length === 0) return
+    const lastMsg = messages[messages.length - 1]
+    if (lastMsg.role === "assistant" && !disabled && !isLoading) {
+      // Small delay to ensure the message is rendered and loading is complete
+      const timer = setTimeout(() => {
+        inputRef.current?.focus()
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [messages, disabled, isLoading])
 
   // TTS: Play assistant messages when they arrive and voiceMode is on
   useEffect(() => {
@@ -139,6 +160,7 @@ export function ChatInterface({ messages, onSendMessage, disabled = false, isLoa
       <div className="p-4 border-t">
         <form onSubmit={handleSubmit} className="flex gap-2">
           <Input
+            ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}

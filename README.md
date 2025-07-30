@@ -8,7 +8,7 @@ The system demonstrates a full-stack application with a React-based frontend and
 
 - **Conversational Triage**: Engages users in a natural conversation to understand their symptoms.
 - **Protocol-Guided Logic**: Follows specific medical protocols (e.g., for headaches) based on the user's complaint.
-- **Emergency Detection**: Identifies critical symptoms and immediately flags the situation as an emergency.
+- **Emergency Detection**: Identifies critical symptoms based on symptom nature (not severity or duration) and immediately flags the situation as an emergency.
 - **Structured Data Capture**: Generates a structured JSON object in real-time, suitable for EMR integration.
 - **In-Memory State**: Manages conversation state per-session without requiring a database.
 

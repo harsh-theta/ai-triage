@@ -239,10 +239,17 @@ async def chat_with_tts(request: ChatRequest):
 
 @app.get("/tts/health")
 async def tts_health():
-    """Check TTS microservice health"""
+    """Check TTS service health"""
     is_healthy = tts_client.health_check()
+    provider_info = tts_client.get_provider_info()
+    
     return {
         "tts_service_healthy": is_healthy,
-        "tts_service_url": tts_client.base_url
+        "provider_info": provider_info
     }
+
+@app.get("/tts/provider")
+async def get_tts_provider():
+    """Get current TTS provider information"""
+    return tts_client.get_provider_info()
 

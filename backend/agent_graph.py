@@ -55,8 +55,8 @@ def extract_emr_fields(chat_history: List[Dict]) -> dict:
           * Severe abdominal pain, vomiting blood
           * Allergic reactions, throat swelling, anaphylaxis
           * Overdose, poisoning, suicidal thoughts
-          * Any pain rated 8/10 or higher
           * Any symptoms requiring immediate medical attention
+        - Emergency detection is ONLY based on the nature of symptoms, NOT on severity scores or duration
         - When emergency_flag is true, the case will be immediately transferred to human medical professionals
         - Patient safety is the absolute priority - err on the side of caution
 
@@ -112,37 +112,32 @@ def detect_emergency_symptoms(emr_fields: dict, chat_history: List[Dict]) -> dic
     # Combine all symptom text for analysis
     symptom_text = f"{all_user_text} {chief_complaint} {associated_symptoms}".lower()
     
-    # Define emergency symptom patterns
+    # Define emergency symptom patterns - based on symptom nature, not severity
     emergency_patterns = [
         # Cardiac emergencies
         "chest pain", "chest pressure", "chest tightness", "heart attack", "cardiac arrest",
-        "severe chest pain", "crushing chest pain", "radiating pain", "left arm pain",
+        "crushing chest pain", "radiating pain", "left arm pain",
         
         # Respiratory emergencies  
         "shortness of breath", "difficulty breathing", "can't breathe", "cannot breathe",
-        "trouble breathing", "gasping", "choking", "severe asthma", "respiratory distress",
+        "trouble breathing", "gasping", "choking", "respiratory distress",
         
         # Neurological emergencies
-        "stroke", "severe headache", "worst headache", "sudden headache", "confusion",
-        "loss of consciousness", "unconscious", "seizure", "paralysis", "weakness on one side",
-        "slurred speech", "vision loss", "sudden vision", "dizziness with chest pain",
+        "stroke", "loss of consciousness", "unconscious", "seizure", "paralysis", 
+        "weakness on one side", "slurred speech", "vision loss", "sudden vision",
         
-        # Severe bleeding/trauma
-        "severe bleeding", "heavy bleeding", "uncontrolled bleeding", "major trauma",
-        "head injury", "severe injury", "broken bone", "compound fracture",
+        # Bleeding/trauma
+        "uncontrolled bleeding", "major trauma", "head injury", "compound fracture",
         
-        # Severe abdominal issues
-        "severe abdominal pain", "severe stomach pain", "appendicitis", "severe nausea",
-        "vomiting blood", "blood in vomit", "severe dehydration",
+        # Abdominal emergencies
+        "appendicitis", "vomiting blood", "blood in vomit",
         
         # Allergic reactions
-        "anaphylaxis", "severe allergic reaction", "swelling throat", "throat closing",
-        "difficulty swallowing", "severe rash", "hives all over",
+        "anaphylaxis", "throat closing", "difficulty swallowing",
         
-        # Other emergencies
-        "overdose", "poisoning", "suicide", "self harm", "severe depression",
-        "high fever", "fever over 103", "severe pain", "pain 9", "pain 10",
-        "emergency", "911", "hospital", "ambulance", "urgent care"
+        # Other critical emergencies
+        "overdose", "poisoning", "suicide", "self harm",
+        "emergency", "911", "hospital", "ambulance"
     ]
     
     # Check for emergency patterns
@@ -153,12 +148,6 @@ def detect_emergency_symptoms(emr_fields: dict, chat_history: List[Dict]) -> dic
         if pattern in symptom_text:
             emergency_detected = True
             detected_symptoms.append(pattern)
-    
-    # Additional severity-based detection
-    severity = emr_fields.get("severity")
-    if severity and (isinstance(severity, (int, float)) and severity >= 8):
-        emergency_detected = True
-        detected_symptoms.append(f"high severity score: {severity}")
     
     # Update EMR fields if emergency detected
     if emergency_detected:

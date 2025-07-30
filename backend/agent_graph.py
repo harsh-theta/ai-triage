@@ -46,19 +46,22 @@ def extract_emr_fields(chat_history: List[Dict]) -> dict:
         Fields: {REQUIRED_FIELDS}
 
         CRITICAL EMERGENCY DETECTION INSTRUCTIONS:
-        - If you detect ANY emergency symptoms, you MUST set "emergency_flag" to true immediately
-        - Emergency symptoms include but are not limited to:
+        - ONLY set "emergency_flag" to true for life-threatening symptoms that require immediate medical attention
+        - Emergency symptoms are SPECIFIC conditions, NOT based on pain severity or duration:
           * Chest pain, chest pressure, heart attack symptoms
           * Shortness of breath, difficulty breathing, can't breathe
-          * Stroke symptoms, severe headache, loss of consciousness
-          * Severe bleeding, major trauma, head injury
-          * Severe abdominal pain, vomiting blood
+          * Stroke symptoms, loss of consciousness, seizures
+          * Uncontrolled bleeding, major trauma, head injury
+          * Vomiting blood, appendicitis symptoms
           * Allergic reactions, throat swelling, anaphylaxis
           * Overdose, poisoning, suicidal thoughts
-          * Any symptoms requiring immediate medical attention
-        - Emergency detection is ONLY based on the nature of symptoms, NOT on severity scores or duration
+        - IMPORTANT: Common symptoms with high severity are NOT emergencies:
+          * Headache (even severe 8-10/10) = NOT emergency
+          * Back pain (even severe) = NOT emergency  
+          * Stomach pain (unless vomiting blood) = NOT emergency
+          * Joint pain (even severe) = NOT emergency
+        - Emergency detection is ONLY based on the TYPE of symptom, NOT severity scores or duration
         - When emergency_flag is true, the case will be immediately transferred to human medical professionals
-        - Patient safety is the absolute priority - err on the side of caution
 
         For the 'severity' field, only accept values between 1 and 10. If the user gives a value outside this range, set severity to null.
 

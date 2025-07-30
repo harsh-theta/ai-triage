@@ -190,24 +190,21 @@ export function ChatInterface({ messages, onSendMessage, disabled = false, isLoa
               variant={isListening ? "default" : "outline"}
               size="lg"
               className={cn(
-                "w-16 h-16 rounded-full transition-all duration-200",
-                isListening ? "bg-red-500 hover:bg-red-600 animate-pulse" : "hover:scale-105"
+                "w-20 h-20 rounded-full transition-all duration-200 shadow-lg",
+                isListening 
+                  ? "bg-red-500 hover:bg-red-600 animate-pulse shadow-red-200" 
+                  : "hover:scale-105 shadow-blue-100 border-2 border-blue-200"
               )}
               aria-label={isListening ? "Stop listening and send" : "Start listening"}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                fill={isListening ? "white" : "none"}
                 viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="h-8 w-8"
+                fill={isListening ? "white" : "currentColor"}
+                className="h-10 w-10"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 18.75v1.5m0 0h3.75m-3.75 0H8.25m7.5-7.5a3.75 3.75 0 10-7.5 0v2.25a3.75 3.75 0 007.5 0V12z"
-                />
+                <path d="M8.25 4.5a3.75 3.75 0 1 1 7.5 0v4.5a3.75 3.75 0 1 1-7.5 0V4.5Z" />
+                <path d="M6 10.5a.75.75 0 0 1 .75.75v1.5a5.25 5.25 0 1 0 10.5 0v-1.5a.75.75 0 0 1 1.5 0v1.5A6.75 6.75 0 0 1 12.75 20v1.25h3a.75.75 0 0 1 0 1.5h-7.5a.75.75 0 0 1 0-1.5h3V20A6.75 6.75 0 0 1 5.25 12.75v-1.5A.75.75 0 0 1 6 10.5Z" />
               </svg>
             </Button>
             {!isListening && (

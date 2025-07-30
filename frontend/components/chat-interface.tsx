@@ -221,7 +221,7 @@ export function ChatInterface({ messages, onSendMessage, disabled = false, isLoa
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder={disabled ? "Chat disabled" : "Describe your symptoms..."}
+              placeholder={disabled ? "Assessment complete" : "Describe your symptoms..."}
               disabled={disabled || isLoading}
               className="flex-1"
             />

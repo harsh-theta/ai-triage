@@ -79,6 +79,46 @@ def get_emr_summary(emr_fields: dict) -> str:
         return "Summary unavailable."
 
 
+# Check if all required questions have been sufficiently addressed
+def all_questions_answered(emr_fields: dict, chat_history: List[Dict]) -> bool:
+    """
+    Check if all required fields have been addressed through questions,
+    even if some fields might be empty due to negative responses.
+    """
+    missing = get_missing_fields(emr_fields)
+    
+    # If no fields are missing, all questions are answered
+    if not missing:
+        return True
+    
+    # Check if we've asked about each missing field in the conversation
+    history_text = " ".join([msg["content"].lower() for msg in chat_history if msg["role"] == "assistant"])
+    
+    # Map fields to question keywords that indicate we've asked about them
+    field_keywords = {
+        "chief_complaint": ["complaint", "problem", "concern", "symptoms", "feeling", "wrong"],
+        "duration": ["long", "duration", "when", "started", "how long", "since when"],
+        "severity": ["severe", "pain", "scale", "rate", "intensity", "bad"],
+        "onset": ["start", "began", "onset", "sudden", "gradual", "when did"],
+        "location": ["where", "location", "area", "part", "body"],
+        "associated_symptoms": ["other", "additional", "else", "more", "associated", "along with"],
+        "emergency_flag": ["emergency", "urgent", "serious", "hospital", "911", "ambulance"]
+    }
+    
+    # Check if we've asked about each missing field
+    for field in missing:
+        if field in field_keywords:
+            keywords = field_keywords[field]
+            if any(keyword in history_text for keyword in keywords):
+                # We've asked about this field, so consider it addressed even if empty
+                continue
+            else:
+                # We haven't asked about this field yet
+                return False
+    
+    return True
+
+
 # Main triage loop
 def triage_conversation(user_input: str, session_state: Dict = None) -> Dict:
     if session_state is None:
@@ -100,11 +140,14 @@ def triage_conversation(user_input: str, session_state: Dict = None) -> Dict:
     emr_fields = extract_emr_fields(chat_history)
     missing = get_missing_fields(emr_fields)
 
-    # End if emergency or enough turns or all fields filled
-    if emr_fields.get("emergency_flag") or turn >= 8 or not missing:
+    # Check if all questions have been answered (even if some fields are empty)
+    questions_complete = all_questions_answered(emr_fields, chat_history)
+    
+    # End if emergency detected, too many turns, or all questions answered
+    if emr_fields.get("emergency_flag") or turn >= 8 or questions_complete:
         session_state["is_complete"] = True
         summary = get_emr_summary(emr_fields)
-        bot_reply = summary if summary else "Thank you, I have all the information I need."
+        bot_reply = summary if summary else "Thank you, I have gathered all the necessary information for your triage assessment."
         chat_history.append({"role": "assistant", "content": bot_reply})
         return {
             "emr_fields": emr_fields,
@@ -126,15 +169,15 @@ def triage_conversation(user_input: str, session_state: Dict = None) -> Dict:
         - You are directly talking with the user.
         - Do not repeat questions that have already been answered or asked.
         - If the user gives a negative answer (e.g., 'no', 'none', 'nothing else'), accept it and move on to the next field.
-        - If all required fields are filled, or an emergency is detected, summarize the case and end the conversation.
         - Only ask one question at a time.
+        - Focus on gathering information systematically.
 
         Here is the conversation so far:
         {history_str}
 
         Here are the fields still missing: {missing}
 
-        If more information is needed, ask the next best question to fill a missing field. If everything is complete, provide a summary and end the conversation.
+        Ask the next best question to fill a missing field. Be conversational and empathetic.
         Respond with only your next message to the user.
     """
 
@@ -143,7 +186,7 @@ def triage_conversation(user_input: str, session_state: Dict = None) -> Dict:
         bot_reply = response.text.strip()
     except Exception as e:
         print(f"[triage_conversation] LLM question failed: {e}")
-        bot_reply = "Could you please clarify your symptoms?"
+        bot_reply = "Could you please tell me more about your symptoms?"
 
     chat_history.append({"role": "assistant", "content": bot_reply})
     session_state["turn"] = turn + 1

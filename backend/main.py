@@ -86,17 +86,26 @@ async def triage_with_text_and_tts(request: TextTriageRequest):
     }
     state = triage_graph.invoke(initial_state)
     
-    # Generate TTS for the response
-    audio_url = tts_client.text_to_speech(state["next_bot_reply"])
-    
     response = {
         "text_reply": state["next_bot_reply"],
         "emr_snapshot": state["emr_fields"]
     }
     
-    # Add audio URL if TTS was successful
-    if audio_url:
-        response["audio_url"] = audio_url
+    # Generate TTS for the response - this is non-blocking for the main response
+    try:
+        print(f"DEBUG: Attempting TTS for triage response: '{state['next_bot_reply'][:50]}...'")
+        audio_url = tts_client.text_to_speech(state["next_bot_reply"])
+        
+        if audio_url:
+            response["audio_url"] = audio_url
+            print(f"DEBUG: TTS successful, audio_url added: {audio_url}")
+        else:
+            print("DEBUG: TTS failed, continuing without audio_url")
+            # Response continues without audio_url - frontend fallback will handle this
+            
+    except Exception as e:
+        print(f"ERROR: TTS generation failed with exception: {e}")
+        # Response continues without audio_url - this ensures the main request never fails
     
     return response
 
@@ -204,12 +213,20 @@ def get_final_summary(
 @app.post("/tts")
 async def text_to_speech(request: TTSRequest):
     """Convert text to speech using the TTS microservice"""
-    audio_url = tts_client.text_to_speech(request.text, request.voice)
-    
-    if audio_url:
-        return {"audio_url": audio_url, "status": "success"}
-    else:
-        return {"error": "Failed to generate audio", "status": "error"}
+    try:
+        print(f"DEBUG: Attempting TTS for standalone request: '{request.text[:50]}...'")
+        audio_url = tts_client.text_to_speech(request.text, request.voice)
+        
+        if audio_url:
+            print(f"DEBUG: Standalone TTS successful: {audio_url}")
+            return {"audio_url": audio_url, "status": "success"}
+        else:
+            print("DEBUG: Standalone TTS failed, no audio URL returned")
+            return {"error": "Failed to generate audio", "status": "error"}
+            
+    except Exception as e:
+        print(f"ERROR: Standalone TTS generation failed with exception: {e}")
+        return {"error": f"TTS service error: {str(e)}", "status": "error"}
 
 
 # Removed /audio/{filename} endpoint - now using direct TTS service URLs
@@ -221,18 +238,22 @@ async def chat_with_tts(request: ChatRequest):
     # Get regular chat response
     chat_response = await chat_endpoint(request)
     
-    # Generate TTS for the AI response
-    ai_message = chat_response["ai_message"]
-    print(f"DEBUG: Generating TTS for message: '{ai_message}'")
-    audio_url = tts_client.text_to_speech(ai_message)
-    print(f"DEBUG: TTS result: {audio_url}")
-    
-    # Add audio URL directly from TTS service
-    if audio_url:
-        chat_response["audio_url"] = audio_url
-        print(f"DEBUG: Added audio_url: {chat_response['audio_url']}")
-    else:
-        print("DEBUG: No audio_url returned from TTS")
+    # Generate TTS for the AI response - this is non-blocking for the main response
+    try:
+        ai_message = chat_response["ai_message"]
+        print(f"DEBUG: Attempting TTS for chat message: '{ai_message[:50]}...'")
+        audio_url = tts_client.text_to_speech(ai_message)
+        
+        if audio_url:
+            chat_response["audio_url"] = audio_url
+            print(f"DEBUG: TTS successful, audio_url added: {audio_url}")
+        else:
+            print("DEBUG: TTS failed, continuing without audio_url")
+            # Response continues without audio_url - frontend fallback will handle this
+            
+    except Exception as e:
+        print(f"ERROR: TTS generation failed with exception: {e}")
+        # Response continues without audio_url - this ensures the main request never fails
     
     return chat_response
 
@@ -242,10 +263,12 @@ async def tts_health():
     """Check TTS service health"""
     is_healthy = tts_client.health_check()
     provider_info = tts_client.get_provider_info()
+    circuit_breaker_status = tts_client.get_circuit_breaker_status()
     
     return {
         "tts_service_healthy": is_healthy,
-        "provider_info": provider_info
+        "provider_info": provider_info,
+        "circuit_breaker_status": circuit_breaker_status
     }
 
 @app.get("/tts/provider")

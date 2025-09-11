@@ -142,9 +142,9 @@ export function ChatInterface({ messages, onSendMessage, disabled = false, isLoa
   }
 
   return (
-    <div className="flex flex-col h-full bg-white min-h-0">
+    <div className="flex flex-col h-full bg-white">
       {/* Messages */}
-      <ScrollArea className="flex-1 px-6 py-6 min-h-0" ref={scrollAreaRef}>
+      <ScrollArea className="flex-1 px-6 py-6" ref={scrollAreaRef}>
         <div className="space-y-6">
           {messages.map((message) => (
             <div

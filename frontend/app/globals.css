@@ -97,10 +97,6 @@ body {
   }
   body {
     @apply bg-background text-foreground;
-    overflow: hidden;
-  }
-  html, body {
-    height: 100%;
   }
 }
 

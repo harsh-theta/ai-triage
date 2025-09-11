@@ -27,7 +27,7 @@ export function SiteHeader(): JSX.Element {
           <div className="flex items-center gap-4">
             <div className="flex items-center">
               <img
-                src="/intelligent-triage/theta_white.png"
+                src="/theta_white.png"
                 alt="Theta Technolabs"
                 className="h-10 w-auto object-contain"
                 onError={(e) => {

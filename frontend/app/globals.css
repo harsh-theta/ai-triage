@@ -15,8 +15,8 @@ body {
 @layer base {
   :root {
     /* Theta Technolabs palette (matching the screenshot) */
-    --theta-teal: 174 72% 56%; /* #20B2AA - proper teal */
-    --theta-cyan: 186 100% 50%; /* #00BFFF - bright cyan */
+    --theta-teal: 183 66% 47%; /* #27C0C7 - brighter teal */
+    --theta-cyan: 186 60% 38%; /* #27909C - darker teal */
     --theta-blue: 195 100% 50%; /* #0080FF - vibrant blue */
     --theta-deep: 210 100% 25%; /* #003D80 - deep blue */
     --theta-ink: 222 26% 16%; /* #2A2D3A - dark text */

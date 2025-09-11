@@ -20,15 +20,15 @@ export function SiteHeader(): JSX.Element {
   }
 
   return (
-    <header className="sticky top-0 z-50 bg-gradient-to-r from-[hsl(var(--theta-teal))] to-[hsl(var(--theta-cyan))] shadow-sm">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-[hsl(var(--theta-teal))] to-[hsl(var(--theta-cyan))] shadow-sm">
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Logo and Title */}
           <div className="flex items-center gap-4">
             <div className="flex items-center">
-              <img 
-                src="/logo.png" 
-                alt="Theta Technolabs" 
+              <img
+                src="https://demo.thetatechnolabs.com/assets/Theta%20Logo_1753431895879-M-ygvsIZ.png"
+                alt="Theta Technolabs"
                 className="h-10 w-auto object-contain"
                 onError={(e) => {
                   // Hide the image and show fallback

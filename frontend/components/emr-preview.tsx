@@ -1,4 +1,3 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import type { EmrData } from "@/app/page"
 import { User, Activity, FileText, AlertTriangle } from "lucide-react"
@@ -13,113 +12,119 @@ export function EmrPreview({ data, summary }: EmrPreviewProps) {
 
   if (isEmpty) {
     return (
-      <Card className="h-[600px]">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            EMR Preview
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {summary ? (
-            <div className="space-y-2">
-              <h3 className="font-semibold">Live Summary</h3>
-              <pre className="text-sm bg-gray-50 p-3 rounded max-h-[480px] overflow-auto whitespace-pre-wrap">{summary}</pre>
+      <div className="px-6 py-4">
+        {summary ? (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-2 h-2 bg-[hsl(var(--theta-teal))] rounded-full animate-pulse"></div>
+              <h3 className="font-semibold text-gray-900">Live Assessment</h3>
             </div>
-          ) : (
-            <p className="text-gray-500 text-center py-8">EMR data will appear here as the triage progresses</p>
-          )}
-        </CardContent>
-      </Card>
+            <div className="bg-gray-50 p-4 border-l-4 border-[hsl(var(--theta-teal))]">
+              <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans leading-relaxed">{summary}</pre>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <FileText className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500 text-lg">EMR data will appear here</p>
+            <p className="text-gray-400 text-sm">as the triage assessment progresses</p>
+          </div>
+        )}
+        <div className="pb-4"></div>
+      </div>
     )
   }
 
   return (
-    <Card className="h-[600px]">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileText className="h-5 w-5" />
-          EMR Preview
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Live Summary */}
-        {summary && (
-          <div>
-            <h3 className="font-semibold mb-2">Live Summary</h3>
-            <div className="text-sm bg-gray-50 p-3 rounded max-h-48 overflow-auto whitespace-pre-wrap font-sans">{summary}</div>
+    <div className="px-6 py-4 space-y-6 pb-8">
+      {/* Live Summary */}
+      {summary && (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-2 h-2 bg-[hsl(var(--theta-teal))] rounded-full animate-pulse"></div>
+            <h3 className="font-semibold text-gray-900">Live Assessment</h3>
           </div>
-        )}
-
-        {/* Patient Info */}
-        {data.patient_info && (
-          <div>
-            <h3 className="font-semibold flex items-center gap-2 mb-2">
-              <User className="h-4 w-4" />
-              Patient Information
-            </h3>
-            <div className="space-y-1 text-sm">
-              {data.patient_info.age && (
-                <p>
-                  <span className="font-medium">Age:</span> {data.patient_info.age}
-                </p>
-              )}
-              {data.patient_info.gender && (
-                <p>
-                  <span className="font-medium">Gender:</span> {data.patient_info.gender}
-                </p>
-              )}
-              {data.patient_info.chief_complaint && (
-                <p>
-                  <span className="font-medium">Chief Complaint:</span> {data.patient_info.chief_complaint}
-                </p>
-              )}
-            </div>
+          <div className="bg-gradient-to-r from-[hsl(var(--theta-teal))]/5 to-[hsl(var(--theta-cyan))]/5 p-4 border-l-4 border-[hsl(var(--theta-teal))]">
+            <div className="text-sm text-gray-700 whitespace-pre-wrap font-sans leading-relaxed">{summary}</div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Vital Signs (optional) */}
-        {data.vital_signs && (
-          <div>
-            <h3 className="font-semibold flex items-center gap-2 mb-2">
-              <Activity className="h-4 w-4" />
-              Vital Signs
-            </h3>
-            <div className="space-y-1 text-sm">
-              {data.vital_signs.temperature && (
-                <p>
-                  <span className="font-medium">Temperature:</span> {data.vital_signs.temperature}
-                </p>
-              )}
-              {data.vital_signs.blood_pressure && (
-                <p>
-                  <span className="font-medium">Blood Pressure:</span> {data.vital_signs.blood_pressure}
-                </p>
-              )}
-              {data.vital_signs.heart_rate && (
-                <p>
-                  <span className="font-medium">Heart Rate:</span> {data.vital_signs.heart_rate}
-                </p>
-              )}
-              {data.vital_signs.respiratory_rate && (
-                <p>
-                  <span className="font-medium">Respiratory Rate:</span> {data.vital_signs.respiratory_rate}
-                </p>
-              )}
-            </div>
+      {/* Patient Info */}
+      {data.patient_info && (
+        <div>
+          <h3 className="font-semibold flex items-center gap-2 mb-3 text-gray-900">
+            <User className="h-5 w-5 text-[hsl(var(--theta-teal))]" />
+            Patient Information
+          </h3>
+          <div className="bg-gray-50 p-4 space-y-3">
+            {data.patient_info.age && (
+              <div className="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0">
+                <span className="text-gray-600">Age</span>
+                <span className="font-medium text-gray-900">{data.patient_info.age}</span>
+              </div>
+            )}
+            {data.patient_info.gender && (
+              <div className="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0">
+                <span className="text-gray-600">Gender</span>
+                <span className="font-medium text-gray-900">{data.patient_info.gender}</span>
+              </div>
+            )}
+            {data.patient_info.chief_complaint && (
+              <div className="py-2">
+                <span className="text-gray-600 block mb-1">Chief Complaint</span>
+                <span className="font-medium text-gray-900">{data.patient_info.chief_complaint}</span>
+              </div>
+            )}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Removed Assessment and Triage Level per requirements */}
-
-        {/* Protocol */}
-        {data.protocol_followed && (
-          <div>
-            <h3 className="font-semibold mb-2">Protocol Followed</h3>
-            <p className="text-sm bg-gray-50 p-2 rounded">{data.protocol_followed}</p>
+      {/* Vital Signs */}
+      {data.vital_signs && (
+        <div>
+          <h3 className="font-semibold flex items-center gap-2 mb-3 text-gray-900">
+            <Activity className="h-5 w-5 text-[hsl(var(--theta-teal))]" />
+            Vital Signs
+          </h3>
+          <div className="bg-gray-50 p-4 space-y-3">
+            {data.vital_signs.temperature && (
+              <div className="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0">
+                <span className="text-gray-600">Temperature</span>
+                <span className="font-medium text-gray-900">{data.vital_signs.temperature}</span>
+              </div>
+            )}
+            {data.vital_signs.blood_pressure && (
+              <div className="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0">
+                <span className="text-gray-600">Blood Pressure</span>
+                <span className="font-medium text-gray-900">{data.vital_signs.blood_pressure}</span>
+              </div>
+            )}
+            {data.vital_signs.heart_rate && (
+              <div className="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0">
+                <span className="text-gray-600">Heart Rate</span>
+                <span className="font-medium text-gray-900">{data.vital_signs.heart_rate}</span>
+              </div>
+            )}
+            {data.vital_signs.respiratory_rate && (
+              <div className="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0">
+                <span className="text-gray-600">Respiratory Rate</span>
+                <span className="font-medium text-gray-900">{data.vital_signs.respiratory_rate}</span>
+              </div>
+            )}
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      )}
+
+      {/* Protocol */}
+      {data.protocol_followed && (
+        <div>
+          <h3 className="font-semibold mb-3 text-gray-900">Protocol Followed</h3>
+          <div className="bg-blue-50 p-4 border-l-4 border-blue-400">
+            <p className="text-sm text-blue-800">{data.protocol_followed}</p>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }

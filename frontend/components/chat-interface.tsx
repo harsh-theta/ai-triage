@@ -144,7 +144,7 @@ export function ChatInterface({ messages, onSendMessage, disabled = false, isLoa
   return (
     <div className="flex flex-col h-full bg-white min-h-0">
       {/* Messages */}
-      <ScrollArea className="flex-1 px-6 py-4 min-h-0" ref={scrollAreaRef}>
+      <ScrollArea className="flex-1 px-6 py-6 min-h-0" ref={scrollAreaRef}>
         <div className="space-y-6">
           {messages.map((message) => (
             <div
@@ -187,7 +187,7 @@ export function ChatInterface({ messages, onSendMessage, disabled = false, isLoa
       </ScrollArea>
 
       {/* Input */}
-      <div className="border-t border-gray-200 bg-gray-50 px-6 py-4">
+      <div className="border-t border-gray-200 bg-gray-50 px-6 py-6">
         {voiceMode ? (
           // Voice Mode: Only show mic button with status
           <div className="flex flex-col items-center gap-4">

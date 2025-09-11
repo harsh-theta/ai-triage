@@ -26,19 +26,12 @@ export interface EmrData {
     gender?: string
     chief_complaint?: string
   }
-  symptoms?: string[]
   vital_signs?: {
     temperature?: string
     blood_pressure?: string
     heart_rate?: string
     respiratory_rate?: string
   }
-  assessment?: {
-    severity?: string
-    recommendations?: string[]
-    next_steps?: string[]
-  }
-  triage_level?: number
   protocol_followed?: string
 }
 
@@ -50,6 +43,7 @@ export interface TriageState {
   session_id: string
   is_loading: boolean
   error_message?: string
+  medical_summary?: string
 }
 
 export default function TriagePage() {
@@ -113,17 +107,8 @@ export default function TriagePage() {
 
       const data = await response.json()
 
-      // Frontend validation for severity
+      // Simplified EMR data (assessment removed)
       let emr_data = data.emr_data || state.emr_data
-      if (emr_data && emr_data.assessment && emr_data.assessment.severity) {
-        let sev = emr_data.assessment.severity
-        let num = typeof sev === "string" ? parseInt(sev) : sev
-        if (isNaN(num) || num < 1 || num > 10) {
-          emr_data.assessment.severity = null
-        } else {
-          emr_data.assessment.severity = num
-        }
-      }
 
       // Add AI response
       const aiMessage: Message = {
@@ -142,6 +127,7 @@ export default function TriagePage() {
         current_protocol: data.protocol || prev.current_protocol,
         is_loading: false,
         error_message: undefined,
+        medical_summary: data.medical_summary || data.updated_report || prev.medical_summary,
       }))
     } catch (error) {
       setState((prev) => ({
@@ -217,7 +203,7 @@ export default function TriagePage() {
 
           {/* EMR Preview Panel */}
           <div className="lg:col-span-1">
-            <EmrPreview data={state.emr_data} />
+            <EmrPreview data={state.emr_data} summary={state.medical_summary} />
           </div>
         </div>
 

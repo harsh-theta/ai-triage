@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from agent_graph import build_triad_agent
+from triage_agent import build_triad_agent
 import uuid
 import os
 from fastapi import Query
@@ -149,14 +149,7 @@ async def chat_endpoint(request: ChatRequest):
     emr_data = {
         "patient_info": {
             "chief_complaint": state["emr_fields"].get("chief_complaint", "")
-        },
-        "symptoms": [state["emr_fields"].get("associated_symptoms", "")],
-        "assessment": {
-            "severity": state["emr_fields"].get("severity", ""),
-            "recommendations": [],
-            "next_steps": []
-        },
-        "triage_level": 1 if state["emr_fields"].get("emergency_flag") else 3
+        }
     }
     
     return {
@@ -164,7 +157,9 @@ async def chat_endpoint(request: ChatRequest):
         "status": status,
         "protocol": "AI Triage Assessment",
         "emr_data": emr_data,
-        "messages": [] 
+        "messages": [],
+        "medical_summary": state["emr_fields"].get("medical_summary", ""),
+        "updated_report": state["emr_fields"].get("medical_summary", "")
     }
 
 
@@ -233,6 +228,12 @@ async def chat_with_tts(request: ChatRequest):
         print(f"DEBUG: Added audio_url: {chat_response['audio_url']}")
     else:
         print("DEBUG: No audio_url returned from TTS")
+    
+    # Ensure medical summary is included
+    if "medical_summary" not in chat_response:
+        chat_response["medical_summary"] = ""
+    if "updated_report" not in chat_response:
+        chat_response["updated_report"] = ""
     
     return chat_response
 

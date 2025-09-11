@@ -5,9 +5,10 @@ import { User, Activity, FileText, AlertTriangle } from "lucide-react"
 
 interface EmrPreviewProps {
   data: EmrData
+  summary?: string
 }
 
-export function EmrPreview({ data }: EmrPreviewProps) {
+export function EmrPreview({ data, summary }: EmrPreviewProps) {
   const isEmpty = Object.keys(data).length === 0
 
   if (isEmpty) {
@@ -20,7 +21,14 @@ export function EmrPreview({ data }: EmrPreviewProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-gray-500 text-center py-8">EMR data will appear here as the triage progresses</p>
+          {summary ? (
+            <div className="space-y-2">
+              <h3 className="font-semibold">Live Summary</h3>
+              <pre className="text-sm bg-gray-50 p-3 rounded max-h-[480px] overflow-auto whitespace-pre-wrap">{summary}</pre>
+            </div>
+          ) : (
+            <p className="text-gray-500 text-center py-8">EMR data will appear here as the triage progresses</p>
+          )}
         </CardContent>
       </Card>
     )
@@ -35,6 +43,14 @@ export function EmrPreview({ data }: EmrPreviewProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Live Summary */}
+        {summary && (
+          <div>
+            <h3 className="font-semibold mb-2">Live Summary</h3>
+            <div className="text-sm bg-gray-50 p-3 rounded max-h-48 overflow-auto whitespace-pre-wrap font-sans">{summary}</div>
+          </div>
+        )}
+
         {/* Patient Info */}
         {data.patient_info && (
           <div>
@@ -62,33 +78,7 @@ export function EmrPreview({ data }: EmrPreviewProps) {
           </div>
         )}
 
-        {/* Symptoms */}
-        {data.symptoms && data.symptoms.length > 0 && (
-          <div>
-            <h3 className="font-semibold mb-2">Symptoms</h3>
-            <div className="flex flex-wrap gap-1">
-              {Array.isArray(data.symptoms)
-                ? data.symptoms.flatMap((symptom, index) =>
-                    typeof symptom === "string"
-                      ? symptom.split(",").map((s, i) => (
-                          <Badge key={index + '-' + i} variant="secondary" className="text-xs">
-                            {s.trim()}
-                          </Badge>
-                        ))
-                      : null
-                  )
-                : typeof data.symptoms === "string"
-                ? data.symptoms.split(",").map((s, i) => (
-                    <Badge key={i} variant="secondary" className="text-xs">
-                      {s.trim()}
-                    </Badge>
-                  ))
-                : null}
-            </div>
-          </div>
-        )}
-
-        {/* Vital Signs */}
+        {/* Vital Signs (optional) */}
         {data.vital_signs && (
           <div>
             <h3 className="font-semibold flex items-center gap-2 mb-2">
@@ -120,67 +110,7 @@ export function EmrPreview({ data }: EmrPreviewProps) {
           </div>
         )}
 
-        {/* Assessment */}
-        {data.assessment && (
-          <div>
-            <h3 className="font-semibold flex items-center gap-2 mb-2">
-              <AlertTriangle className="h-4 w-4" />
-              Assessment
-            </h3>
-            <div className="space-y-2 text-sm">
-              {data.assessment.severity && (
-                <div>
-                  <span className="font-medium">Severity:</span>
-                  <Badge
-                    className="ml-2"
-                    variant={
-                      data.assessment.severity === "High"
-                        ? "destructive"
-                        : data.assessment.severity === "Medium"
-                          ? "default"
-                          : "secondary"
-                    }
-                  >
-                    {data.assessment.severity}
-                  </Badge>
-                </div>
-              )}
-              {data.assessment.recommendations && data.assessment.recommendations.length > 0 && (
-                <div>
-                  <p className="font-medium">Recommendations:</p>
-                  <ul className="list-disc list-inside ml-2 space-y-1">
-                    {data.assessment.recommendations.map((rec, index) => (
-                      <li key={index}>{rec}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {data.assessment.next_steps && data.assessment.next_steps.length > 0 && (
-                <div>
-                  <p className="font-medium">Next Steps:</p>
-                  <ul className="list-disc list-inside ml-2 space-y-1">
-                    {data.assessment.next_steps.map((step, index) => (
-                      <li key={index}>{step}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Triage Level */}
-        {data.triage_level && (
-          <div>
-            <h3 className="font-semibold mb-2">Triage Level</h3>
-            <Badge
-              className="text-lg px-3 py-1"
-              variant={data.triage_level <= 2 ? "destructive" : data.triage_level <= 3 ? "default" : "secondary"}
-            >
-              Level {data.triage_level}
-            </Badge>
-          </div>
-        )}
+        {/* Removed Assessment and Triage Level per requirements */}
 
         {/* Protocol */}
         {data.protocol_followed && (

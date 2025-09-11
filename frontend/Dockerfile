@@ -25,8 +25,8 @@ WORKDIR /usr/share/nginx/html
 # Copy built application from builder stage
 COPY --from=builder /app/out .
 
-# Copy custom nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
+# Copy optimized nginx configuration
+COPY nginx-optimized.conf /etc/nginx/nginx.conf
 
 # Create log directory and set permissions
 RUN mkdir -p /var/log/nginx && \
@@ -34,9 +34,16 @@ RUN mkdir -p /var/log/nginx && \
     chown -R nginx:nginx /usr/share/nginx/html && \
     chown -R nginx:nginx /var/log/nginx
 
+# Create nginx cache directory
+RUN mkdir -p /var/cache/nginx && \
+    chown -R nginx:nginx /var/cache/nginx
+
 # Expose port
 EXPOSE 80
 
+# Add health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost/health || exit 1
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"] 

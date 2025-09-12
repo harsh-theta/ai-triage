@@ -9,8 +9,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // Configure for proxy deployment - nginx handles the routing
-  // basePath and assetPrefix removed - nginx handles the /intelligent-triage prefix
+  // Configure for static export - nginx handles the /intelligent-triage routing
   trailingSlash: false,
   // Enable static export for nginx deployment
   output: 'export',

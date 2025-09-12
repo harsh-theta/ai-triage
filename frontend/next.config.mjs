@@ -9,7 +9,9 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // Configure for static export - nginx handles the /intelligent-triage routing
+  // Configure for static export with base path
+  basePath: '/intelligent-triage',
+  assetPrefix: '/intelligent-triage',
   trailingSlash: false,
   // Enable static export for nginx deployment
   output: 'export',

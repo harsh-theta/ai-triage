@@ -8,7 +8,7 @@ from prompts import summary_prompt
 from google import genai
 from pydantic import BaseModel
 from dotenv import load_dotenv
-from tts_client import tts_client
+from murf_client import murf_client
 
 # Load environment variables
 load_dotenv()
@@ -32,7 +32,7 @@ class ChatRequest(BaseModel):
 
 class TTSRequest(BaseModel):
     text: str
-    voice: str = "female"
+    voice: str = "en-IN-priya"
 
 app = FastAPI(root_path=ROOT_PATH)
 
@@ -87,7 +87,7 @@ async def triage_with_text_and_tts(request: TextTriageRequest):
     state = triage_graph.invoke(initial_state)
     
     # Generate TTS for the response
-    audio_url = tts_client.text_to_speech(state["next_bot_reply"])
+    audio_url = murf_client.text_to_speech(state["next_bot_reply"])
     
     response = {
         "text_reply": state["next_bot_reply"],
@@ -199,7 +199,7 @@ def get_final_summary(
 @app.post("/tts")
 async def text_to_speech(request: TTSRequest):
     """Convert text to speech using the TTS microservice"""
-    audio_url = tts_client.text_to_speech(request.text, request.voice)
+    audio_url = murf_client.text_to_speech(request.text, request.voice)
     
     if audio_url:
         return {"audio_url": audio_url, "status": "success"}
@@ -219,7 +219,7 @@ async def chat_with_tts(request: ChatRequest):
     # Generate TTS for the AI response
     ai_message = chat_response["ai_message"]
     print(f"DEBUG: Generating TTS for message: '{ai_message}'")
-    audio_url = tts_client.text_to_speech(ai_message)
+    audio_url = murf_client.text_to_speech(ai_message)
     print(f"DEBUG: TTS result: {audio_url}")
     
     # Add audio URL directly from TTS service
@@ -241,9 +241,8 @@ async def chat_with_tts(request: ChatRequest):
 @app.get("/tts/health")
 async def tts_health():
     """Check TTS microservice health"""
-    is_healthy = tts_client.health_check()
+    is_healthy = murf_client.health_check()
     return {
         "tts_service_healthy": is_healthy,
-        "tts_service_url": tts_client.base_url
+        "tts_service_url": "Murf API"
     }
-

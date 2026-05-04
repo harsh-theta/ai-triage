@@ -4,13 +4,11 @@ from typing import Dict, List, Optional
 from google import genai
 import os
 import json
-from dotenv import load_dotenv
-
-load_dotenv()
+from config import settings
 
 # --- Setup Gemini ---
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-MODEL_NAME = os.getenv("MODEL_NAME")
+GEMINI_API_KEY = settings.GEMINI_API_KEY
+MODEL_NAME = settings.MODEL_NAME
 llm = genai.Client(api_key=GEMINI_API_KEY)
 
 # System prompt for the medical triage interviewer

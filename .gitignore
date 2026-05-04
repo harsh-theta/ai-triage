@@ -119,3 +119,7 @@ temp/
 .venv/
 
 audio/
+# Environment variables
+.env
+.env.*
+!.env.example

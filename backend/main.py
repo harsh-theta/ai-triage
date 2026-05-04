@@ -7,17 +7,14 @@ from fastapi import Query
 from prompts import summary_prompt
 from google import genai
 from pydantic import BaseModel
-from dotenv import load_dotenv
+from config import settings
 from murf_client import murf_client
 
-# Load environment variables
-load_dotenv()
-
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-MODEL_NAME = os.getenv("MODEL_NAME")
+GEMINI_API_KEY = settings.GEMINI_API_KEY
+MODEL_NAME = settings.MODEL_NAME
 print(MODEL_NAME)
 # Get root path for proxy deployment
-ROOT_PATH = os.getenv("ROOT_PATH", "")
+ROOT_PATH = settings.ROOT_PATH
 
 # --- Setup Gemini ---
 llm = genai.Client(api_key=GEMINI_API_KEY)
@@ -39,7 +36,7 @@ app = FastAPI(root_path=ROOT_PATH)
 # Enable CORS if needed
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -85,19 +82,19 @@ async def triage_with_text_and_tts(request: TextTriageRequest):
         "next_bot_reply": None
     }
     state = triage_graph.invoke(initial_state)
-    
+
     # Generate TTS for the response
     audio_url = murf_client.text_to_speech(state["next_bot_reply"])
-    
+
     response = {
         "text_reply": state["next_bot_reply"],
         "emr_snapshot": state["emr_fields"]
     }
-    
+
     # Add audio URL if TTS was successful
     if audio_url:
         response["audio_url"] = audio_url
-    
+
     return response
 
 # Compatibility endpoint for existing frontend
@@ -106,7 +103,7 @@ async def chat_endpoint(request: ChatRequest):
     """Frontend compatibility endpoint with session management"""
     message = request.message
     session_id = request.session_id or str(uuid.uuid4())
-    
+
     # Get or create session state
     if session_id not in sessions:
         sessions[session_id] = {
@@ -115,9 +112,9 @@ async def chat_endpoint(request: ChatRequest):
             "last_question": None,
             "is_complete": False
         }
-    
+
     session_state = sessions[session_id]
-    
+
     # Use the triage graph with existing session state
     initial_state = {
         "emr_fields": session_state["emr_fields"],
@@ -127,9 +124,9 @@ async def chat_endpoint(request: ChatRequest):
         "is_complete": session_state["is_complete"],
         "next_bot_reply": None
     }
-    
+
     state = triage_graph.invoke(initial_state)
-    
+
     # Update session state
     sessions[session_id] = {
         "emr_fields": state["emr_fields"],
@@ -137,21 +134,21 @@ async def chat_endpoint(request: ChatRequest):
         "last_question": state["next_bot_reply"],
         "is_complete": state["is_complete"]
     }
-    
+
     # Determine status based on EMR fields and emergency flag
     status = "active"
     if state["emr_fields"].get("emergency_flag"):
         status = "emergency_detected"
     elif state["is_complete"]:
         status = "complete"
-    
+
     # Map EMR fields to frontend expected format
     emr_data = {
         "patient_info": {
             "chief_complaint": state["emr_fields"].get("chief_complaint", "")
         }
     }
-    
+
     return {
         "ai_message": state["next_bot_reply"],
         "status": status,
@@ -200,7 +197,7 @@ def get_final_summary(
 async def text_to_speech(request: TTSRequest):
     """Convert text to speech using the TTS microservice"""
     audio_url = murf_client.text_to_speech(request.text, request.voice)
-    
+
     if audio_url:
         return {"audio_url": audio_url, "status": "success"}
     else:
@@ -215,26 +212,26 @@ async def chat_with_tts(request: ChatRequest):
     """Chat endpoint that also returns TTS audio"""
     # Get regular chat response
     chat_response = await chat_endpoint(request)
-    
+
     # Generate TTS for the AI response
     ai_message = chat_response["ai_message"]
     print(f"DEBUG: Generating TTS for message: '{ai_message}'")
     audio_url = murf_client.text_to_speech(ai_message)
     print(f"DEBUG: TTS result: {audio_url}")
-    
+
     # Add audio URL directly from TTS service
     if audio_url:
         chat_response["audio_url"] = audio_url
         print(f"DEBUG: Added audio_url: {chat_response['audio_url']}")
     else:
         print("DEBUG: No audio_url returned from TTS")
-    
+
     # Ensure medical summary is included
     if "medical_summary" not in chat_response:
         chat_response["medical_summary"] = ""
     if "updated_report" not in chat_response:
         chat_response["updated_report"] = ""
-    
+
     return chat_response
 
 
